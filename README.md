@@ -110,7 +110,9 @@ quantum-commerce-store/
 
 ```bash
 # 1. Subir Postgres + API
-cp backend/.env.example backend/.env   # ajuste POSTGRES_PASSWORD
+cp .env.example .env                    # .env da RAIZ: o compose lê este
+cp backend/.env.example backend/.env   # backend/.env: seed.py / uvicorn local
+# ajuste POSTGRES_PASSWORD com a MESMA senha nos dois arquivos
 docker compose up --build              # Postgres :5432 + API :8000
 
 # 2. Popular o banco (em outro terminal)

@@ -49,8 +49,10 @@ training.py → ml/interfaces.py (ReviewDataSource) ← ml/datasets.py
 ## Como rodar (Mac)
 
 ```bash
-# 1. subir Postgres + API
-cp backend/.env.example backend/.env   # ajuste POSTGRES_PASSWORD
+# 1. subir Postgres + API (na RAIZ do repo)
+cp .env.example .env                    # .env da raiz: o compose lê este
+cp backend/.env.example backend/.env   # backend/.env: seed.py / uvicorn local
+# ajuste POSTGRES_PASSWORD com a MESMA senha nos dois arquivos
 docker compose up --build
 
 # 2. popular o banco (em outro terminal)
