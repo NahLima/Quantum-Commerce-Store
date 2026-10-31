@@ -1,0 +1,110 @@
+{
+  "negative": {
+    "positive": [
+      "veio",
+      "péssima",
+      "horrível",
+      "quebrou",
+      "total",
+      "decepção total",
+      "decepção",
+      "desejar",
+      "deixou desejar",
+      "deixou",
+      "inaceitável",
+      "devolver",
+      "terrível",
+      "terrível devolver",
+      "péssimo"
+    ],
+    "negative": [
+      "excelente",
+      "prazo",
+      "chegou prazo",
+      "cumpre",
+      "básico",
+      "impecável",
+      "ok",
+      "superou",
+      "demais",
+      "ruim excelente",
+      "bom",
+      "esperava",
+      "aceitável",
+      "chegou",
+      "produto excelente"
+    ]
+  },
+  "neutral": {
+    "positive": [
+      "aceitável",
+      "cumpre",
+      "básico",
+      "ruim excelente",
+      "ok",
+      "ruim",
+      "cumpre básico",
+      "prazo",
+      "ok preço",
+      "razoável preço",
+      "produto ok",
+      "razoável",
+      "comum esperava",
+      "achei comum",
+      "achei"
+    ],
+    "negative": [
+      "ótima",
+      "recomendo",
+      "impecável",
+      "veio",
+      "produto excelente",
+      "superou",
+      "vale",
+      "fotos",
+      "deixou",
+      "deixou desejar",
+      "desejar",
+      "defeito",
+      "qualidade",
+      "péssima",
+      "quebrou"
+    ]
+  },
+  "positive": {
+    "positive": [
+      "ótima",
+      "impecável",
+      "superou",
+      "produto excelente",
+      "superou esperava",
+      "perfeita",
+      "excelente",
+      "embalado",
+      "embalado defeito",
+      "chegou embalado",
+      "recomendo dúvida",
+      "dúvida",
+      "bom recomendo",
+      "maravilhosa comprarei",
+      "comprarei"
+    ],
+    "negative": [
+      "aceitável",
+      "ruim",
+      "veio",
+      "cumpre",
+      "básico",
+      "ruim excelente",
+      "ok",
+      "horrível",
+      "péssima",
+      "decepção total",
+      "total",
+      "decepção",
+      "cumpre básico",
+      "quebrou",
+      "preço"
+    ]
+  }
+}

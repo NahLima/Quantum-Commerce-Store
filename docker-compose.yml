@@ -1,0 +1,44 @@
+# Quantum Commerce — Backend (FastAPI + ML de sentimento)
+# Trabalho final de Machine Learning (FIAP MBA, turma 4AIER)
+# Tema: Análise de sentimento em reviews (PT-BR), referência Mercado Livre.
+#
+# Stack: Python 3.12, FastAPI, SQLAlchemy, Postgres 16 (Docker), scikit-learn.
+# O frontend (Next.js + TypeScript + Tailwind) roda separadamente com `npm run dev`
+# e consome esta API em http://localhost:8000.
+
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: qc-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-quantum}
+      POSTGRES_USER: ${POSTGRES_USER:-quantum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-quantum} -d ${POSTGRES_DB:-quantum}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    container_name: qc-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://quantum:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-quantum}
+      MODEL_DIR: /app/ml/artifacts
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/ml/artifacts:/app/ml/artifacts
+
+volumes:
+  pgdata:

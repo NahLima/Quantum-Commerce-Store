@@ -1,0 +1,502 @@
+[
+  {
+    "id": 1,
+    "name": "Fone Orbit Pro",
+    "category": "Tecnologia",
+    "price_cents": 8900,
+    "color": "Rosa Névoa",
+    "image_url": "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 18
+  },
+  {
+    "id": 2,
+    "name": "Fone Studio One",
+    "category": "Tecnologia",
+    "price_cents": 11700,
+    "color": "Cinza Grafite",
+    "image_url": "https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 31
+  },
+  {
+    "id": 3,
+    "name": "Óculos Frame",
+    "category": "Tecnologia",
+    "price_cents": 14500,
+    "color": "Preto",
+    "image_url": "https://images.unsplash.com/photo-1628202926206-c63a34b1618f?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 44
+  },
+  {
+    "id": 4,
+    "name": "Headphone Eclipse",
+    "category": "Tecnologia",
+    "price_cents": 17300,
+    "color": "Noite",
+    "image_url": "https://images.unsplash.com/photo-1599669454699-248893623440?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 57
+  },
+  {
+    "id": 5,
+    "name": "Fone Pulse",
+    "category": "Tecnologia",
+    "price_cents": 20100,
+    "color": "Preto Fosco",
+    "image_url": "https://images.unsplash.com/photo-1505740106531-4243f3831c78?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 70
+  },
+  {
+    "id": 6,
+    "name": "Headphone Signal",
+    "category": "Tecnologia",
+    "price_cents": 22900,
+    "color": "Rosa Névoa",
+    "image_url": "https://images.unsplash.com/photo-1593121925328-369cc8459c08?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 83
+  },
+  {
+    "id": 7,
+    "name": "Caixa Wave Mini",
+    "category": "Tecnologia",
+    "price_cents": 25700,
+    "color": "Cinza Grafite",
+    "image_url": "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 96
+  },
+  {
+    "id": 8,
+    "name": "Carregador Arc",
+    "category": "Tecnologia",
+    "price_cents": 28500,
+    "color": "Preto",
+    "image_url": "https://images.unsplash.com/photo-1484704849700-f032a568e944?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 109
+  },
+  {
+    "id": 9,
+    "name": "Teclado Flow",
+    "category": "Tecnologia",
+    "price_cents": 31300,
+    "color": "Noite",
+    "image_url": "https://images.unsplash.com/photo-1628202926206-c63a34b1618f?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 122
+  },
+  {
+    "id": 10,
+    "name": "Luminária Beam",
+    "category": "Tecnologia",
+    "price_cents": 34100,
+    "color": "Preto Fosco",
+    "image_url": "https://images.unsplash.com/photo-1599669454699-248893623440?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 135
+  },
+  {
+    "id": 11,
+    "name": "Poltrona Cloud",
+    "category": "Casa",
+    "price_cents": 12600,
+    "color": "Areia",
+    "image_url": "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 25
+  },
+  {
+    "id": 12,
+    "name": "Sofá Módulo",
+    "category": "Casa",
+    "price_cents": 15400,
+    "color": "Off-white",
+    "image_url": "https://images.unsplash.com/photo-1631679706909-1844bbd07221?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 38
+  },
+  {
+    "id": 13,
+    "name": "Cadeira Noma",
+    "category": "Casa",
+    "price_cents": 18200,
+    "color": "Verde Sálvia",
+    "image_url": "https://images.unsplash.com/photo-1631510390389-c1e4fb20ff31?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 51
+  },
+  {
+    "id": 14,
+    "name": "Mesa Lateral Loop",
+    "category": "Casa",
+    "price_cents": 21000,
+    "color": "Terracota",
+    "image_url": "https://images.unsplash.com/photo-1729086046027-09979ade13fd?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 64
+  },
+  {
+    "id": 15,
+    "name": "Luminária Duna",
+    "category": "Casa",
+    "price_cents": 23800,
+    "color": "Madeira Natural",
+    "image_url": "https://images.unsplash.com/photo-1667312939978-64cf31718a6e?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 77
+  },
+  {
+    "id": 16,
+    "name": "Vaso Forma",
+    "category": "Casa",
+    "price_cents": 26600,
+    "color": "Areia",
+    "image_url": "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 90
+  },
+  {
+    "id": 17,
+    "name": "Manta Brisa",
+    "category": "Casa",
+    "price_cents": 29400,
+    "color": "Off-white",
+    "image_url": "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 103
+  },
+  {
+    "id": 18,
+    "name": "Bandeja Uno",
+    "category": "Casa",
+    "price_cents": 32200,
+    "color": "Verde Sálvia",
+    "image_url": "https://images.unsplash.com/photo-1631679706909-1844bbd07221?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 116
+  },
+  {
+    "id": 19,
+    "name": "Difusor Calm",
+    "category": "Casa",
+    "price_cents": 35000,
+    "color": "Terracota",
+    "image_url": "https://images.unsplash.com/photo-1631510390389-c1e4fb20ff31?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 129
+  },
+  {
+    "id": 20,
+    "name": "Organizador Grid",
+    "category": "Casa",
+    "price_cents": 37800,
+    "color": "Madeira Natural",
+    "image_url": "https://images.unsplash.com/photo-1729086046027-09979ade13fd?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 142
+  },
+  {
+    "id": 21,
+    "name": "Sérum Lumière",
+    "category": "Beleza",
+    "price_cents": 16300,
+    "color": "Transparente",
+    "image_url": "https://images.unsplash.com/photo-1764694187721-a5035d777fdf?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 32
+  },
+  {
+    "id": 22,
+    "name": "Óleo Botanical",
+    "category": "Beleza",
+    "price_cents": 19100,
+    "color": "Âmbar",
+    "image_url": "https://images.unsplash.com/photo-1779228900994-5b055597a0ec?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 45
+  },
+  {
+    "id": 23,
+    "name": "Kit Essenciais",
+    "category": "Beleza",
+    "price_cents": 21900,
+    "color": "Rosé",
+    "image_url": "https://images.unsplash.com/photo-1787478187203-7ecefb240b6c?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 58
+  },
+  {
+    "id": 24,
+    "name": "Sérum Restore",
+    "category": "Beleza",
+    "price_cents": 24700,
+    "color": "Natural",
+    "image_url": "https://images.unsplash.com/photo-1771329064159-33f758d91f4a?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 71
+  },
+  {
+    "id": 25,
+    "name": "Máscara Solar",
+    "category": "Beleza",
+    "price_cents": 27500,
+    "color": "Coral",
+    "image_url": "https://images.unsplash.com/photo-1773000129212-3546d5e083cd?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 84
+  },
+  {
+    "id": 26,
+    "name": "Cleanser Daily",
+    "category": "Beleza",
+    "price_cents": 30300,
+    "color": "Transparente",
+    "image_url": "https://images.unsplash.com/photo-1773070309549-8123488410d7?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 97
+  },
+  {
+    "id": 27,
+    "name": "Hidratante Dew",
+    "category": "Beleza",
+    "price_cents": 33100,
+    "color": "Âmbar",
+    "image_url": "https://images.unsplash.com/photo-1764694187721-a5035d777fdf?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 110
+  },
+  {
+    "id": 28,
+    "name": "Balm Aura",
+    "category": "Beleza",
+    "price_cents": 35900,
+    "color": "Rosé",
+    "image_url": "https://images.unsplash.com/photo-1779228900994-5b055597a0ec?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 123
+  },
+  {
+    "id": 29,
+    "name": "Essência Calm",
+    "category": "Beleza",
+    "price_cents": 38700,
+    "color": "Natural",
+    "image_url": "https://images.unsplash.com/photo-1787478187203-7ecefb240b6c?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 136
+  },
+  {
+    "id": 30,
+    "name": "Protetor Velvet",
+    "category": "Beleza",
+    "price_cents": 41500,
+    "color": "Coral",
+    "image_url": "https://images.unsplash.com/photo-1771329064159-33f758d91f4a?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 149
+  },
+  {
+    "id": 31,
+    "name": "Relógio Axis",
+    "category": "Estilo",
+    "price_cents": 20000,
+    "color": "Preto",
+    "image_url": "https://images.unsplash.com/photo-1758887952896-8491d393afe2?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 39
+  },
+  {
+    "id": 32,
+    "name": "Relógio Mono",
+    "category": "Estilo",
+    "price_cents": 22800,
+    "color": "Prata",
+    "image_url": "https://images.unsplash.com/photo-1605583972593-1fda24a7bea2?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 52
+  },
+  {
+    "id": 33,
+    "name": "Relógio Gild",
+    "category": "Estilo",
+    "price_cents": 25600,
+    "color": "Dourado",
+    "image_url": "https://images.unsplash.com/photo-1786284684467-2351a5447e8a?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 65
+  },
+  {
+    "id": 34,
+    "name": "Relógio Verde",
+    "category": "Estilo",
+    "price_cents": 28400,
+    "color": "Verde Floresta",
+    "image_url": "https://images.unsplash.com/photo-1786284684434-9158964ee63c?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 78
+  },
+  {
+    "id": 35,
+    "name": "Tênis Modular",
+    "category": "Estilo",
+    "price_cents": 31200,
+    "color": "Branco",
+    "image_url": "https://images.unsplash.com/photo-1778521157912-620fd0d3c6e1?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 91
+  },
+  {
+    "id": 36,
+    "name": "Relógio Blanc",
+    "category": "Estilo",
+    "price_cents": 34000,
+    "color": "Preto",
+    "image_url": "https://images.unsplash.com/photo-1774389992420-44d11d49f16b?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 104
+  },
+  {
+    "id": 37,
+    "name": "Bolsa Mini Arc",
+    "category": "Estilo",
+    "price_cents": 36800,
+    "color": "Prata",
+    "image_url": "https://images.unsplash.com/photo-1758887952896-8491d393afe2?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 117
+  },
+  {
+    "id": 38,
+    "name": "Carteira Fold",
+    "category": "Estilo",
+    "price_cents": 39600,
+    "color": "Dourado",
+    "image_url": "https://images.unsplash.com/photo-1605583972593-1fda24a7bea2?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 130
+  },
+  {
+    "id": 39,
+    "name": "Óculos Linear",
+    "category": "Estilo",
+    "price_cents": 42400,
+    "color": "Verde Floresta",
+    "image_url": "https://images.unsplash.com/photo-1786284684467-2351a5447e8a?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 143
+  },
+  {
+    "id": 40,
+    "name": "Boné Essential",
+    "category": "Estilo",
+    "price_cents": 45200,
+    "color": "Branco",
+    "image_url": "https://images.unsplash.com/photo-1786284684434-9158964ee63c?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 156
+  },
+  {
+    "id": 41,
+    "name": "Mochila Summit",
+    "category": "Outdoor",
+    "price_cents": 23700,
+    "color": "Cinza Rocha",
+    "image_url": "https://images.unsplash.com/photo-1509762774605-f07235a08f1f?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 46
+  },
+  {
+    "id": 42,
+    "name": "Mochila Trail",
+    "category": "Outdoor",
+    "price_cents": 26500,
+    "color": "Azul Profundo",
+    "image_url": "https://images.unsplash.com/photo-1592388748465-8c4dca8dd703?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 59
+  },
+  {
+    "id": 43,
+    "name": "Mochila Field",
+    "category": "Outdoor",
+    "price_cents": 29300,
+    "color": "Preto",
+    "image_url": "https://images.unsplash.com/photo-1584895738330-2e2cae9e8355?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 72
+  },
+  {
+    "id": 44,
+    "name": "Pack Explorer",
+    "category": "Outdoor",
+    "price_cents": 32100,
+    "color": "Verde Musgo",
+    "image_url": "https://images.unsplash.com/photo-1560200772-42d9dcffed6d?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 85
+  },
+  {
+    "id": 45,
+    "name": "Mochila Move",
+    "category": "Outdoor",
+    "price_cents": 34900,
+    "color": "Violeta",
+    "image_url": "https://images.unsplash.com/photo-1619689323522-5d1c665dd0f3?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 98
+  },
+  {
+    "id": 46,
+    "name": "Garrafa Canyon",
+    "category": "Outdoor",
+    "price_cents": 37700,
+    "color": "Cinza Rocha",
+    "image_url": "https://images.unsplash.com/photo-1789067204449-3b0289934627?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.5,
+    "reviews_count": 111
+  },
+  {
+    "id": 47,
+    "name": "Lanterna Trek",
+    "category": "Outdoor",
+    "price_cents": 40500,
+    "color": "Azul Profundo",
+    "image_url": "https://images.unsplash.com/photo-1509762774605-f07235a08f1f?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.6,
+    "reviews_count": 124
+  },
+  {
+    "id": 48,
+    "name": "Copo Térmico Alto",
+    "category": "Outdoor",
+    "price_cents": 43300,
+    "color": "Preto",
+    "image_url": "https://images.unsplash.com/photo-1592388748465-8c4dca8dd703?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.7,
+    "reviews_count": 137
+  },
+  {
+    "id": 49,
+    "name": "Capa Rain",
+    "category": "Outdoor",
+    "price_cents": 46100,
+    "color": "Verde Musgo",
+    "image_url": "https://images.unsplash.com/photo-1584895738330-2e2cae9e8355?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.8,
+    "reviews_count": 150
+  },
+  {
+    "id": 50,
+    "name": "Kit Camp",
+    "category": "Outdoor",
+    "price_cents": 48900,
+    "color": "Violeta",
+    "image_url": "https://images.unsplash.com/photo-1560200772-42d9dcffed6d?auto=format&fit=crop&w=1200&q=85",
+    "rating": 4.9,
+    "reviews_count": 163
+  }
+]
