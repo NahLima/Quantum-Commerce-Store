@@ -5,4 +5,7 @@ __pycache__/
 *.pyc
 app.db
 ml/artifacts/*.joblib
+# Dataset Olist original (14 MB, licença Kaggle) — não versionar.
+# Fica em data/olist_order_reviews_dataset.csv (pasta archive do Drive).
+data/olist_*.csv
 .DS_Store

@@ -1,8 +1,13 @@
 """Fontes de dados de treino (implementações de `ReviewDataSource`).
 
     OlistReviewSource: dataset real (Brazilian E-Commerce Public Dataset,
-        Kaggle). Lê `backend/data/olist_reviews.csv` (colunas `review_text`
-        e `review_score`); devolve DataFrame vazio se o arquivo não existe.
+        Kaggle — arquivo original `olist_order_reviews_dataset.csv`,
+        99.224 linhas). Colunas reais: `review_comment_message`,
+        `review_comment_title` e `review_score`; o texto usado é
+        título + mensagem (o título salva 1.737 linhas que só têm
+        título). Aceita também um arquivo já renomeado como
+        `olist_reviews.csv` com colunas `review_text`/`review_score`.
+        Devolve DataFrame vazio se nenhum arquivo existe.
     CsvReviewSource: qualquer CSV com colunas `text` e `stars`.
     SyntheticReviewSource: reviews PT-BR geradas de templates por
         sentimento — default para o trabalho rodar sem download externo.
@@ -24,7 +29,9 @@ from ml.labels import label_from_stars
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
-OLIST_FILE = DATA_DIR / "olist_reviews.csv"
+# Nome original do Kaggle primeiro; aceita o nome curto como fallback.
+OLIST_FILE = DATA_DIR / "olist_order_reviews_dataset.csv"
+OLIST_FILE_SHORT = DATA_DIR / "olist_reviews.csv"
 
 _COLUMNS = ["text", "stars"]
 
@@ -36,10 +43,23 @@ def _with_labels(df: pd.DataFrame) -> pd.DataFrame:
 
 
 class OlistReviewSource(ReviewDataSource):
-    """Reviews reais do Olist (Kaggle, Brazilian E-Commerce)."""
+    """Reviews reais do Olist (Kaggle, Brazilian E-Commerce).
+
+    Esquema real do arquivo: `review_comment_message`,
+    `review_comment_title`, `review_score`. O texto é título +
+    mensagem (o título sozinho salva 1.737 linhas sem mensagem).
+    Das 99.224 linhas, 42.687 têm título ou mensagem (56.537 não
+    têm texto nenhum e são descartadas aqui — não dá para classificar
+    sentimento de texto vazio).
+    """
 
     def __init__(self, path: Path | None = None) -> None:
-        self._path = path or OLIST_FILE
+        if path is not None:
+            self._path = path
+        elif OLIST_FILE.exists():
+            self._path = OLIST_FILE
+        else:
+            self._path = OLIST_FILE_SHORT
 
     @property
     def name(self) -> str:
@@ -52,9 +72,21 @@ class OlistReviewSource(ReviewDataSource):
     def load(self) -> pd.DataFrame:
         if not self._path.exists():
             return pd.DataFrame(columns=_COLUMNS + ["label"])
-        df = pd.read_csv(self._path, usecols=["review_text", "review_score"])
-        df = df.rename(columns={"review_text": "text", "review_score": "stars"})
-        df = df.dropna(subset=["text", "stars"])
+        raw = pd.read_csv(self._path)
+        if {"review_comment_message", "review_score"}.issubset(raw.columns):
+            title = raw.get("review_comment_title", "").fillna("").astype(str)
+            message = raw["review_comment_message"].fillna("").astype(str)
+            df = pd.DataFrame(
+                {
+                    "text": (title.str.strip() + " " + message.str.strip()).str.strip(),
+                    "stars": raw["review_score"],
+                }
+            )
+        else:  # arquivo já renomeado com colunas review_text/review_score
+            df = raw.rename(columns={"review_text": "text", "review_score": "stars"})
+            df = df[["text", "stars"]].copy()
+            df["text"] = df["text"].fillna("").astype(str).str.strip()
+        df = df[df["text"] != ""].dropna(subset=["stars"])
         df["stars"] = df["stars"].astype(int).clip(1, 5)
         return _with_labels(df)
 

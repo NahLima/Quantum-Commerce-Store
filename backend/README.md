@@ -33,7 +33,7 @@ backend/
   data/
     products.json       # 50 produtos extraídos do Figma (App.tsx)
     seed_reviews.csv    # gerado pelo seed (text, stars, product_id)
-    olist_reviews.csv   # OPCIONAL: cole aqui o CSV do Olist (ver "Treino com Olist")
+    olist_order_reviews_dataset.csv   # OPCIONAL: CSV do Olist (não versionado, ver "Treino com Olist")
   seed.py               # ProductSeeder + ReviewSeeder + DatabaseSeeder
   tests/                # pytest (8 testes)
 ```
@@ -98,30 +98,40 @@ Frontend (Next.js) roda separadamente: `cd frontend && npm run dev`
 
 ```bash
 # 1. baixe olist_order_reviews_dataset.csv do Kaggle
-#    (Brazilian E-Commerce Public Dataset)
-# 2. salve como backend/data/olist_reviews.csv
+#    (Brazilian E-Commerce Public Dataset — o arquivo também está
+#    na pasta `archive` do Drive da Quantum)
+# 2. salve como backend/data/olist_order_reviews_dataset.csv
+#    (o arquivo NÃO é versionado: está no .gitignore)
 # 3. treine:
 python -m ml.train --olist
 ```
 
-O `OlistReviewSource` lê as colunas `review_text` e `review_score`. Sem o
-arquivo, `--olist` avisa e usa o sintético.
+O `OlistReviewSource` lê as colunas reais `review_comment_message`,
+`review_comment_title` e `review_score` (texto = título + mensagem;
+o título salva 1.737 linhas sem mensagem). Das 99.224 linhas, 42.687
+têm texto. Sem o arquivo, `--olist` avisa e usa o sintético.
 
 ### Métricas
 
-Último treino registrado: ver `ml/artifacts/metrics.json`.
+Último treino registrado: ver `ml/artifacts/metrics.json` — treino
+real no Olist, 31/out/2026 (34.149 treino / 8.538 teste):
 
 | modelo | accuracy | F1-macro |
 |---|---|---|
-| baseline maioria | 0,535 | 0,232 |
-| **LogReg (principal)** | **1,000** | **1,000** |
-| MLP (comparação) | 1,000 | 1,000 |
+| baseline maioria | 0,657 | 0,264 |
+| **LogReg (principal)** | **0,780** | **0,635** |
+| MLP (comparação) | 0,787 | 0,600 |
 
-> **Aviso honesto: o F1 = 1,0 é artefato do dado sintético, não um
-> resultado real.** Os templates sintéticos de treino e teste se sobrepõem,
-> então LogReg e MLP empatam em 1,0. Com o Olist real as métricas vão cair
-> — e é essa queda, com matriz de confusão e F1 por classe, que sustenta a
-> discussão do trabalho. Não apresentar 1,0 como desempenho do modelo.
+F1 por classe (LogReg): positiva 0,886, negativa 0,761, neutra 0,259
+— a classe neutra (só 8,5% do treino) é o gargalo. A MLP ganha em
+acurácia e perde em F1-macro; ela treina numa subamostra estratificada
+de 12.000 linhas porque densifica o TF-IDF (`mlp_n_train` no
+`metrics.json`), e o teste é o mesmo para os três modelos.
+
+> **Aviso honesto:** o treino sintético de demonstração (922 linhas)
+> dá F1 = 1,0 nos dois modelos — artefato dos templates que se
+> sobrepõem, não resultado real. Não apresentar 1,0 como desempenho
+> do modelo.
 
 ## Testes
 

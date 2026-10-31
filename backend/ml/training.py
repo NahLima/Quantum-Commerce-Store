@@ -45,6 +45,12 @@ LOGREG_MAX_ITER = 1000
 
 MLP_HIDDEN_LAYERS = (128,)
 MLP_MAX_ITER = 300
+# A MLP do scikit-learn não trabalha com matriz esparsa: ela densifica
+# o TF-IDF. Com o Olist (~34 mil linhas de treino x 8.000 features),
+# densificar tudo passaria de 2 GB. A MLP treina então numa subamostra
+# estratificada (o teste continua sendo o mesmo para os três modelos,
+# então a comparação segue válida). Registrado em `mlp_n_train`.
+MLP_MAX_TRAIN_ROWS = 12_000
 
 TOP_TERMS_PER_CLASS = 15
 
@@ -147,7 +153,19 @@ class ModelTrainer:
             max_iter=MLP_MAX_ITER,
             random_state=self._random_state,
         )
-        self._mlp_model.fit(train_features, train_labels)
+        mlp_train_features, mlp_train_labels = train_features, train_labels
+        if train_features.shape[0] > MLP_MAX_TRAIN_ROWS:
+            from sklearn.model_selection import train_test_split as _split
+
+            mlp_train_features, _, mlp_train_labels, _ = _split(
+                train_features,
+                train_labels,
+                train_size=MLP_MAX_TRAIN_ROWS,
+                random_state=self._random_state,
+                stratify=train_labels,
+            )
+        results["mlp_n_train"] = int(mlp_train_features.shape[0])
+        self._mlp_model.fit(mlp_train_features, mlp_train_labels)
         results["mlp"] = self._detailed_scores(
             test_labels, self._mlp_model.predict(test_features)
         )

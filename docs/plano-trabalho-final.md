@@ -94,13 +94,14 @@ implementada: o mesmo TF-IDF alimenta um **MLPClassifier**
 (`hidden_layer_sizes=(128,)`, uma camada oculta), treinado e avaliado
 no mesmo split, com as mesmas métricas.
 
-O esperado, com dado real, é o comportamento clássico da literatura
-para texto curto e pouco dado: a MLP empata ou ganha pouco em F1, e
-perde em interpretabilidade, tempo de treino e risco de overfitting.
-Se o ganho for pequeno, a recomendação é a LogReg em produção e a MLP
-como referência documentada. Se a MLP ganhar com folga no Olist, a
-decisão se inverte com evidência — e é por isso que as duas rodam no
-mesmo pipeline, não em notebooks separados.
+Com o Olist real (31/out/2026, ver 3.4), o comportamento foi o
+clássico da literatura para texto curto e pouco dado: a MLP ganhou
+um pouco em acurácia (0,787 contra 0,780) e **perdeu em F1-macro**
+(0,600 contra 0,635), por errar muito mais a classe neutra
+(recall 0,180 contra 0,354). A recomendação, com evidência, é a
+**LogReg em produção** e a MLP como referência documentada — e é
+por isso que as duas rodam no mesmo pipeline, não em notebooks
+separados.
 
 ### 2.4 Alternativas consideradas e descartadas (nesta fase)
 
@@ -156,7 +157,7 @@ scikit-learn — TF-IDF + LogReg / MLP (ml/artifacts/)
 
 | Fonte | O que é | Uso |
 |---|---|---|
-| **Olist** — Brazilian E-Commerce Public Dataset (Kaggle) | ~100 mil avaliações reais em PT-BR (2016–2018), com `review_score` 1–5 e texto livre (`review_comment_message`, `review_comment_title`) | Treino e avaliação do modelo. Rótulo por estrelas. Não está no repo (licença Kaggle); baixar e salvar como `backend/data/olist_reviews.csv`, treinar com `python -m ml.train --olist`. |
+| **Olist** — Brazilian E-Commerce Public Dataset (Kaggle) | ~100 mil avaliações reais em PT-BR (2016–2018), com `review_score` 1–5 e texto livre (`review_comment_message`, `review_comment_title`) | Treino e avaliação do modelo. Rótulo por estrelas. Não está no repo (licença Kaggle, ignorado no `.gitignore`); arquivo original na pasta `archive` do Drive, salvo como `backend/data/olist_order_reviews_dataset.csv`, treino com `python -m ml.train --olist` (31/out/2026: 42.687 linhas úteis, F1-macro LogReg 0,635 — ver 3.4). |
 | **Catálogo Quantum (Figma)** | 50 produtos, 5 categorias, nomes, preços, cores, imagens | Demonstração na loja. Extraído do `App.tsx` do Figma sem inventar nada. |
 | **Reviews de demonstração** | 234 avaliações sintéticas em PT-BR, 3–6 por produto, estrelas coerentes com o texto, marcadas como `source=seed` | Termômetro e painel funcionarem na demo. Não são evidência de desempenho — são só o palco. |
 | **Golden set manual (a fazer)** | Amostra de avaliações dos produtos Quantum revisada manualmente | Validar a transferência Olist → Quantum (mudança de domínio) antes de afirmar que o modelo funciona na loja. |
@@ -187,26 +188,40 @@ Métrica principal: **F1-macro** (as classes são desbalanceadas e a
 negativa, minoritária, é a mais importante para a operação).
 Apoio: acurácia, precisão e recall por classe, matriz de confusão.
 
-Resultados medidos em 31/out/2026, no dado **sintético** de
-demonstração (922 linhas):
+Resultados medidos em 31/out/2026, no **Olist real**
+(`olist_order_reviews_dataset.csv`, pasta `archive` do Drive;
+99.224 linhas, das quais 42.687 com título ou mensagem — 56.537
+sem texto foram descartadas; treino 34.149 / teste 8.538):
 
 | Modelo | Acurácia | F1-macro |
 |---|---|---|
-| Baseline majoritário | 0,535 | 0,232 |
-| TF-IDF + LogReg | 1,000 | 1,000 |
-| TF-IDF + MLP | 1,000 | 1,000 |
+| Baseline majoritário | 0,657 | 0,264 |
+| TF-IDF + LogReg | 0,780 | **0,635** |
+| TF-IDF + MLP | 0,787 | 0,600 |
 
-**Aviso honesto, que faz parte do trabalho:** F1 = 1,0 nos dois
-modelos é artefato do dado sintético — os templates de treino e
-teste se sobrepõem, então não há generalização real sendo medida.
-Esses números provam que o pipeline roda, não que o modelo é
-perfeito. Com o Olist real, espera-se F1-macro bem menor (ordem de
-0,6–0,75 é típica para sentimento em reviews PT-BR) e é essa queda,
-com a matriz de confusão real, que vai virar a discussão do trabalho.
-Os 8 testes do backend (`pytest`, 8 passed) e o build do frontend
-(`npm run build`, Next 15.5.28) passam; o smoke test ao vivo
-confirmou `/predict` (negativo 0,827 num texto de produto quebrado;
-positivo 0,967 num elogio) e `POST /reviews` → 201.
+F1 por classe (LogReg): positiva 0,886 (P 0,941 / R 0,837),
+negativa 0,761 (P 0,748 / R 0,775), neutra 0,259 (P 0,204 /
+R 0,354). A classe neutra é o gargalo — só 3.643 exemplos
+(8,5%) e textos ambíguos ("ok", "produto regular"): 292 das
+729 neutras do teste foram classificadas como negativas e 179
+como positivas. A MLP sofre mais ainda no neutro (F1 0,191,
+recall 0,180), o que explica ela ganhar em acurácia e perder
+em F1-macro. Matriz de confusão da LogReg (linhas = verdade:
+negativa, neutra, positiva): [[1704, 378, 117], [292, 258, 179],
+[283, 629, 4698]]. Artefatos em `backend/ml/artifacts/metrics.json`
+e `top_terms.json` (ex.: termos positivos "parabéns, amei, rápido,
+embalado"; negativos "péssima, ruim, quebrado, demora").
+
+Detalhe de método: a MLP do scikit-learn densifica o TF-IDF, então
+ela treinou numa subamostra estratificada de 12.000 linhas
+(`mlp_n_train` no `metrics.json`); o teste é o mesmo para os três
+modelos, então a comparação segue válida. O treino sintético de
+demonstração (922 linhas) deu F1 = 1,0 nos dois modelos — artefato
+dos templates que se sobrepõem, não resultado real; ele só provou
+que o pipeline roda. Os 8 testes do backend (`pytest`, 8 passed) e
+o build do frontend (`npm run build`, Next 15.5.28) passam; o smoke
+test ao vivo confirmou `/predict` (negativo 0,827 num texto de
+produto quebrado; positivo 0,967 num elogio) e `POST /reviews` → 201.
 
 ### 3.5 Como o resultado é consumido na Quantum
 
@@ -295,9 +310,10 @@ desta proposta, como pede o enunciado.
    digitar um elogio e mostrar positivo.
 4. **Painel `/ops`:** categoria com mais negativas, top produtos,
    alerta > 25%, e a decisão que a operação tomaria.
-5. **Treino e métricas:** mostrar `python -m ml.train`, a tabela
-   baseline × LogReg × MLP e a matriz de confusão — com o aviso
-   do F1 = 1,0 no sintético e o que muda no Olist.
+5. **Treino e métricas:** mostrar `python -m ml.train --olist`, a
+   tabela baseline × LogReg × MLP no Olist real (F1-macro 0,635) e
+   a matriz de confusão — com a discussão da classe neutra como
+   gargalo e do F1 = 1,0 no sintético como artefato.
 6. **Código:** mostrar `ml/interfaces.py` (o contrato),
    `app/services.py` (a regra) e a tabela SOLID no README.
 
@@ -306,7 +322,8 @@ desta proposta, como pede o enunciado.
 | Quando | O quê |
 |---|---|
 | 31/out | Scaffold completo, build e testes passando, push no git (bundle → Mac) |
-| Semana 1 (nov) | Baixar Olist do Kaggle, treinar com `--olist`, registrar métricas reais e matriz de confusão |
+| 31/out | Olist verificado na pasta `archive` do Drive, loader corrigido para as colunas reais, treino com `--olist` e métricas reais registradas (F1-macro LogReg 0,635) |
+| Semana 1 (nov) | Golden set manual Quantum, validar transferência, ajustar limiar se preciso |
 | Semana 2 | Golden set manual Quantum, validar transferência, ajustar limiar se preciso |
 | Semana 3 | Slides/documento final a partir deste plano, ensaio da demo, entrega |
 
