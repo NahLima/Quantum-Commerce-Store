@@ -14,8 +14,11 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# REMOVIDO: `lib/` e `lib64/` do template Python ignoravam QUALQUER
+# pasta chamada `lib`, inclusive `frontend/src/lib/` (products.ts,
+# api.ts, reviews.ts) — o build quebrava no clone com
+# "Module not found: Can't resolve '../lib/products'".
+# O backend usa `.venv/`, então nada aqui precisa dessas regras.
 parts/
 sdist/
 var/
