@@ -130,6 +130,19 @@ acurácia e perde em F1-macro; ela treina numa subamostra estratificada
 de 12.000 linhas porque densifica o TF-IDF (`mlp_n_train` no
 `metrics.json`), e o teste é o mesmo para os três modelos.
 
+### Golden set Quantum (transferência para a loja)
+
+Avaliação manual na loja, 01/nov/2026 — 24 avaliações novas em PT-BR
+(8 por classe, produtos reais do Figma), rótulos aprovados pela
+Naiara (G20, G21 e G23 mantidos neutros, por decisão dela). LogReg
+treinado no Olist, sem re-treino (`eval/golden_set.csv`,
+`eval/eval_golden_set.py`): **13/24 = 0,542** (positiva 6/8,
+negativa 5/8, neutra 2/8), contra 0,780 de acurácia no teste do
+Olist. A neutra é o gargalo — 5 dos 6 erros de neutra viraram
+positiva (G19 → 0,904; G24 → 0,861). Os artefatos `*.joblib` não
+são versionados; o script falha com mensagem clara sem eles
+(`--model-dir` aponta os artefatos).
+
 > **Aviso honesto:** o treino sintético de demonstração (922 linhas)
 > dá F1 = 1,0 nos dois modelos — artefato dos templates que se
 > sobrepõem, não resultado real. Não apresentar 1,0 como desempenho

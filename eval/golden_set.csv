@@ -1,0 +1,25 @@
+id,texto,produto_id,produto,rotulo_esperado,observacao
+G01,Som limpo e bateria dura o dia inteiro. Uso todo dia no trabalho e nunca falhou.,5,Fone Pulse,positive,
+G02,"Chegou antes do prazo, montagem fácil e o tecido parece muito resistente. Adorei a compra.",12,Sofá Módulo,positive,
+G03,Minha pele ficou visivelmente mais hidratada em duas semanas. Virou item obrigatório na rotina.,21,Sérum Lumière,positive,
+G04,"Extremamente confortável, leve e bonito. Caminhei o dia todo sem sentir dor nenhuma.",35,Tênis Modular,positive,
+G05,"Material reforçado, zíper firme e cabe tudo para a trilha. Melhor mochila que já tive.",41,Mochila Summit,positive,
+G06,"Teclas macias, silencioso e conecta rápido. Perfeito para trabalhar de casa.",9,Teclado Flow,positive,
+G07,Hidrata sem deixar a pele oleosa e o cheiro é suave. Recomendo sem pensar duas vezes.,27,Hidratante Dew,positive,
+G08,"Manta macia, quentinha e do tamanho certo para o sofá. Qualidade acima do preço.",17,Manta Brisa,positive,
+G09,Um lado do fone parou de funcionar com uma semana de uso. Dinheiro jogado fora.,2,Fone Studio One,negative,
+G10,Chegou com a costura rasgada e manchada. O atendimento não resolveu nada.,11,Poltrona Cloud,negative,
+G11,"Me deu alergia e ardência na pele. Produto horrível, não recomendo para ninguém.",24,Sérum Restore,negative,
+G12,A pulseira quebrou no segundo dia e o relógio atrasa. Péssima qualidade pelo preço.,31,Relógio Axis,negative,
+G13,Alça arrebentou na primeira viagem e o zíper emperra. Decepção total.,42,Mochila Trail,negative,
+G14,Som distorcido e chiado no volume alto. Pior compra que já fiz aqui.,7,Caixa Wave Mini,negative,
+G15,Vaza mesmo fechada e molhou tudo dentro da bolsa. Não vale o preço.,46,Garrafa Canyon,negative,
+G16,"Veio com defeito, balança e o acabamento é horrível. Arrependimento total.",13,Cadeira Noma,negative,
+G17,Produto ok.,1,Fone Orbit Pro,neutral,Texto curtíssimo — teste de robustez do neutro
+G18,"Produto regular, nada demais.",3,Óculos Frame,neutral,
+G19,"Chegou no prazo, cumpre o que promete. Sem encantar, mas também não decepciona.",14,Mesa Lateral Loop,neutral,
+G20,"É bom, mas esperava mais pelo preço. Funciona, só não é nada especial.",22,Óleo Botanical,neutral,"Rótulo aprovado pela Naiara em 01/nov/2026 (sentimento misto, mantido neutro)"
+G21,"Bonito, mas desconfortável no pulso depois de algumas horas. Fico no meio-termo.",32,Relógio Mono,neutral,"Rótulo aprovado pela Naiara em 01/nov/2026 (sentimento misto, mantido neutro)"
+G22,Atende o básico pelo preço. Nem bom nem ruim.,18,Bandeja Uno,neutral,
+G23,"Mantém a bebida fria por um tempo, depois esquenta. Cumpre metade do prometido.",48,Copo Térmico Alto,neutral,"Rótulo aprovado pela Naiara em 01/nov/2026 (sentimento misto, mantido neutro)"
+G24,"Ok, uso normal. Não vi diferença grande, mas também não tive problema.",30,Protetor Velvet,neutral,

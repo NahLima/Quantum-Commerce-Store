@@ -212,6 +212,40 @@ negativa, neutra, positiva): [[1704, 378, 117], [292, 258, 179],
 e `top_terms.json` (ex.: termos positivos "parabéns, amei, rápido,
 embalado"; negativos "péssima, ruim, quebrado, demora").
 
+#### Golden set Quantum — validação na loja (01/nov/2026)
+
+O golden set manual resolve a limitação de domínio (§4.1): 24
+avaliações novas em PT-BR, escritas para este teste (não copiadas do
+seed nem do Olist), ligadas a produtos reais do Figma (ids 1–50),
+8 por classe, cobrindo as 5 categorias. Rótulos aprovados pela
+Naiara em 01/nov/2026 — os três itens de sentimento misto (G20, G21
+e G23) foram mantidos neutros, por decisão dela, e não virados para
+positivo para favorecer o modelo. Arquivo `eval/golden_set.csv`;
+avaliação reproduzível por `python eval/eval_golden_set.py`
+(`--model-dir` aponta os artefatos; os `*.joblib` não são
+versionados).
+
+Resultado do LogReg treinado no Olist, sem re-treino: **13/24 =
+0,542** (positiva 6/8, negativa 5/8, neutra 2/8), contra 0,780 de
+acurácia no teste do Olist. A transferência perde, e a classe neutra
+é o gargalo: 5 dos 6 erros de neutra viraram positiva — inclusive
+dois neutros claros, G19 ("cumpre o que promete, sem encantar") →
+positiva 0,904 e G24 → positiva 0,861 — então o padrão não depende
+dos três rótulos discutíveis. Coerente com o desbalanceamento do
+treino: 65,7% das 42.687 linhas do Olist com texto são positivas.
+Os outros erros: vocabulário de domínio não visto no Olist (G03
+sérum/pele hidratada → negativa 0,730; G15 "vaza mesmo fechada" →
+positiva 0,481) e negativas com defeito virando neutras (G10, G12).
+Os dois neutros curtíssimos acertaram (G17, G18).
+
+Só o LogReg foi avaliado — o backend só expõe esse preditor; a MLP
+é só artefato de comparação de treino. Discussão que o resultado
+alimenta: limiar de decisão para a neutra, e se vale re-treinar com
+peso de classe ou ampliar o treino com textos do domínio Quantum
+(nada disso feito aqui). Sugestão registrada: ampliar o golden set
+para ~40 itens (mais neutras, mais vocabulário de Beleza/Outdoor)
+num segundo lote.
+
 Detalhe de método: a MLP do scikit-learn densifica o TF-IDF, então
 ela treinou numa subamostra estratificada de 12.000 linhas
 (`mlp_n_train` no `metrics.json`); o teste é o mesmo para os três
@@ -243,8 +277,10 @@ produto quebrado; positivo 0,967 num elogio) e `POST /reviews` → 201.
 
 - **Mudança de domínio.** O modelo treina no Olist (e-commerce
   geral) e é demonstrado na Quantum (catálogo curado específico).
-  Sem o golden set manual, não dá para afirmar o desempenho na
-  loja — só no Olist.
+  O golden set manual (01/nov/2026, 24 itens, §3.4) agora permite
+  afirmar o desempenho na loja: LogReg 13/24 = 0,542, contra 0,780
+  no teste do Olist — a transferência perde, com a neutra como
+  gargalo.
 - **Rótulo por estrelas é ruidoso.** Nem toda avaliação 5 estrelas
   é positiva no texto, nem toda 1 estrela é negativa no texto
   (ironia, "chegou rápido mas veio quebrado"). O teto de qualidade
@@ -323,8 +359,8 @@ desta proposta, como pede o enunciado.
 |---|---|
 | 31/out | Scaffold completo, build e testes passando, push no git (bundle → Mac) |
 | 31/out | Olist verificado na pasta `archive` do Drive, loader corrigido para as colunas reais, treino com `--olist` e métricas reais registradas (F1-macro LogReg 0,635) |
-| Semana 1 (nov) | Golden set manual Quantum, validar transferência, ajustar limiar se preciso |
-| Semana 2 | Golden set manual Quantum, validar transferência, ajustar limiar se preciso |
+| Semana 1 (nov) | Golden set manual Quantum — feito 01/nov: 24 itens, rótulos aprovados, LogReg 13/24 = 0,542 (neutra 2/8); validar Docker no Mac, ajustar limiar se preciso |
+| Semana 2 | Ampliar golden set (~40 itens, mais neutras), validar transferência, ajustar limiar se preciso |
 | Semana 3 | Slides/documento final a partir deste plano, ensaio da demo, entrega |
 
 ## Referências

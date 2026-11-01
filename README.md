@@ -192,6 +192,29 @@ subamostra de 12.000 linhas porque densifica o TF-IDF. O detalhe
 completo (matriz de confusão, top termos) está no plano em
 `docs/plano-trabalho-final.md`.
 
+### Golden set Quantum (transferência para a loja)
+
+Avaliação manual na loja, 01/nov/2026 — 24 avaliações novas em PT-BR
+(8 por classe, produtos reais do Figma), com rótulos aprovados pela
+Naiara (G20, G21 e G23 mantidos neutros, por decisão dela). Rodado
+com o LogReg treinado no Olist, sem re-treino — arquivo
+`eval/golden_set.csv`, script `eval/eval_golden_set.py`:
+
+| classe | acerto |
+|---|---|
+| positiva | 6/8 |
+| negativa | 5/8 |
+| neutra | 2/8 |
+| **geral** | **13/24 = 0,542** |
+
+Contra 0,780 de acurácia no teste do Olist: o modelo transfere pior
+para a Quantum, e a classe neutra é o gargalo — 5 dos 6 erros de
+neutra viraram positiva (G19 "cumpre o que promete, sem encantar"
+→ positiva 0,904; G24 → positiva 0,861). Coerente com o treino:
+65,7% das 42.687 linhas do Olist com texto são positivas. Só o
+LogReg foi avaliado (o backend só expõe esse preditor; a MLP é só
+artefato de comparação de treino).
+
 > **Aviso honesto:** o treino sintético de demonstração (922 linhas)
 > dá F1 = 1,0 nos dois modelos — artefato dos templates que se
 > sobrepõem, não resultado real. Não apresentar 1,0 como desempenho
