@@ -129,6 +129,9 @@ python -m ml.train                     # sintético (~922 reviews)
 #   backend/data/olist_order_reviews_dataset.csv, depois:
 python -m ml.train --olist
 
+Versão passo a passo para aprender no Google Colab (mesmo pipeline, célula
+por célula, com o CSV lido do Drive): `notebooks/treino-sentimento-olist-colab.ipynb`.
+
 # 4. Frontend
 cd ../frontend && npm install && npm run dev   # loja em http://localhost:3000
 ```
