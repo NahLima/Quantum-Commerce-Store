@@ -12,7 +12,13 @@ import {
   type SentimentLabel,
   type SentimentStats,
 } from '../../../lib/reviews';
-import { fetchProductSentiment, predictSentiment, submitReview, type Prediction } from '../../../lib/api';
+import {
+  fetchProduct,
+  fetchProductSentiment,
+  predictSentiment,
+  submitReview,
+  type Prediction,
+} from '../../../lib/api';
 import { useCart } from '../../../components/CartContext';
 import Stars from '../../../components/Stars';
 import SentimentThermometer from '../../../components/SentimentThermometer';
@@ -70,7 +76,9 @@ const SENTIMENT_LABEL: Record<SentimentLabel, string> = {
 export default function ProductPage() {
   const params = useParams();
   const id = Number(params.id);
-  const product = getProduct(id);
+  // Produto: começa com o arquivo local e troca pelo da API (GET /products/{id})
+  // quando ela responde — mesmo padrão do termômetro abaixo.
+  const [product, setProduct] = useState(() => getProduct(id));
   const { addToCart } = useCart();
 
   const [activeImage, setActiveImage] = useState(0);
@@ -99,6 +107,17 @@ export default function ProductPage() {
     () => (product ? categoryImages[product.category].slice(0, 4) : []),
     [product],
   );
+
+  // Carrega o produto da API (GET /products/{id}); sem ela, fica o local.
+  useEffect(() => {
+    let cancelled = false;
+    fetchProduct(id).then((apiProduct) => {
+      if (!cancelled && apiProduct) setProduct(apiProduct);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // Carrega o sentimento: API primeiro, fallback local se a API estiver fora.
   useEffect(() => {

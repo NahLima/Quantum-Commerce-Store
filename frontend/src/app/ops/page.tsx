@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { categories, formatPrice, products } from '../../lib/products';
+import { categories, formatPrice, products as localProducts } from '../../lib/products';
 import { computeSentimentStats, getLocalReviews } from '../../lib/reviews';
+import { fetchProducts } from '../../lib/api';
 import Stars from '../../components/Stars';
 
 export const metadata = {
@@ -9,12 +10,18 @@ export const metadata = {
     'Painel de operações da Quantum Commerce: sentimento das avaliações por categoria e produtos com maior share de avaliações negativas.',
 };
 
+// Sempre renderiza por requisição: o catálogo vem da API (GET /products) a
+// cada acesso; sem a API no ar, usa o arquivo local. Sem isso o `next build`
+// congelaria o catálogo local no HTML estático.
+export const dynamic = 'force-dynamic';
+
 /**
- * Painel de operações — calculado a partir das avaliações locais de demonstração.
- * Quando a API estiver no ar, estes mesmos agregados vêm do Postgres
- * (GET /ops/sentiment); a regra de alerta é a mesma: negativo > 25%.
+ * Painel de operações — catálogo da API, agregados calculados a partir das
+ * avaliações locais de demonstração (não existe endpoint de agregados no
+ * backend; a regra de alerta é a mesma: negativo > 25%).
  */
-export default function OpsPage() {
+export default async function OpsPage() {
+  const products = (await fetchProducts()) ?? localProducts;
   const byCategory = categories.map((category) => {
     const items = products.filter((p) => p.category === category.name);
     const reviews = items.flatMap((p) => getLocalReviews(p.id, p.name));
@@ -205,9 +212,9 @@ export default function OpsPage() {
           produto mostra se o share de negativas cai nas semanas seguintes.
         </p>
         <p style={{ color: '#888b8c', fontSize: 11 }}>
-          Dados de demonstração gerados localmente (src/lib/reviews.ts). Com o backend no ar, os
-          agregados passam a vir do Postgres via API — a regra de alerta e o layout são os
-          mesmos.
+          Catálogo da API (GET /products), com o arquivo local como reserva. Os agregados são
+          calculados das avaliações locais de demonstração (src/lib/reviews.ts) — a regra de
+          alerta e o layout são os mesmos.
         </p>
       </div>
     </main>

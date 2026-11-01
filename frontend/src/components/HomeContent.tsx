@@ -3,9 +3,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { categories, formatPrice, products, type Category, type Product } from '../lib/products';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  categories,
+  formatPrice,
+  products as localProducts,
+  type Category,
+  type Product,
+} from '../lib/products';
 import { categoryImages } from '../lib/products';
+import { fetchProducts } from '../lib/api';
 import Stars from '../components/Stars';
 
 type Filter = Category | 'Todos';
@@ -49,6 +56,19 @@ export default function HomeContent({
   const router = useRouter();
   const [favorites, setFavorites] = useState<number[]>([]);
   const [visible, setVisible] = useState(12);
+  // Catálogo: começa com o arquivo local (renderiza na hora, mesmo sem
+  // backend) e troca pelo catálogo da API (GET /products) quando ela responde.
+  const [products, setProducts] = useState<Product[]>(localProducts);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchProducts().then((catalog) => {
+      if (!cancelled && catalog) setProducts(catalog);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeCategory: Filter = initialCategory;
   const search = initialQuery;
@@ -60,7 +80,7 @@ export default function HomeContent({
           (activeCategory === 'Todos' || product.category === activeCategory) &&
           product.name.toLowerCase().includes(search.toLowerCase()),
       ),
-    [activeCategory, search],
+    [activeCategory, search, products],
   );
 
   function chooseCategory(category: Filter) {
@@ -78,7 +98,7 @@ export default function HomeContent({
     );
   }
 
-  const heroProduct: Product = products[3]; // Headphone Eclipse, como no Figma
+  const heroProduct: Product = products[3] ?? localProducts[3]; // Headphone Eclipse, como no Figma
 
   return (
     <main>
@@ -99,7 +119,7 @@ export default function HomeContent({
           </button>
           <div className="hero-stats">
             <span>
-              <b>50</b> produtos selecionados
+              <b>{products.length}</b> produtos selecionados
             </span>
             <span>
               <b>5</b> universos para descobrir

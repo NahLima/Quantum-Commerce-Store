@@ -4,6 +4,11 @@
 // e src/lib/reviews.ts). O site NUNCA quebra por causa da API.
 //
 // Contrato real do backend (verificado contra backend/app/main.py + schemas.py):
+//   GET  /products      -> [{ "id": 1, "name": "...", "category": "Casa",
+//     "price_cents": 8990, "color": "...", "image_url": "...", "rating": 4.7,
+//     "reviews_count": 42 }] (catálogo; o front mapeia para o tipo Product
+//     local: price = price_cents/100, image = image_url, reviews = reviews_count)
+//   GET  /products/{id} -> um ProductOut como acima
 //   POST /predict   { "text": "..." } -> { "label": "positive"|"neutral"|"negative",
 //     "label_pt": "positiva"|"neutra"|"negativa", "probabilities": {...},
 //     "confidence": 0.93, "model_name": "...", "model_version": "1.0.0" }
@@ -20,9 +25,64 @@
 // em paralelo.
 
 import type { Review, SentimentLabel, SentimentStats } from './reviews';
+import { products as localProducts, type Category, type Product } from './products';
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:8000';
+
+/** Catálogo: a API é a fonte; o arquivo local só é reserva (ver products.ts). */
+const VALID_CATEGORIES: Category[] = ['Tecnologia', 'Casa', 'Beleza', 'Estilo', 'Outdoor'];
+
+function toProduct(raw: unknown): Product | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const id = typeof r.id === 'number' ? r.id : Number(r.id);
+  const category = typeof r.category === 'string' ? r.category : '';
+  if (!Number.isInteger(id) || id <= 0) return null;
+  if (!VALID_CATEGORIES.includes(category as Category)) return null;
+  if (typeof r.name !== 'string' || !r.name) return null;
+  const priceCents = typeof r.price_cents === 'number' ? r.price_cents : Number(r.price_cents);
+  if (!Number.isFinite(priceCents) || priceCents < 0) return null;
+  if (typeof r.image_url !== 'string' || !r.image_url) return null;
+  // O banco não tem `badge` ("Mais vendido"/"Novo"): reaproveita o do
+  // arquivo local, pelo id, para não perder o selo do Figma.
+  const badge = localProducts.find((p) => p.id === id)?.badge;
+  return {
+    id,
+    name: r.name,
+    category: category as Category,
+    price: Math.round(priceCents) / 100,
+    color: typeof r.color === 'string' ? r.color : '',
+    image: r.image_url,
+    rating: typeof r.rating === 'number' ? r.rating : 0,
+    reviews: typeof r.reviews_count === 'number' ? r.reviews_count : 0,
+    ...(badge ? { badge } : {}),
+  };
+}
+
+/** Catálogo completo da API (GET /products), ordenado por id; null => usar o local. */
+export async function fetchProducts(): Promise<Product[] | null> {
+  for (const path of ['/products', '/api/products']) {
+    const data = await fetchJson(`${API_URL}${path}`);
+    if (!Array.isArray(data)) continue;
+    const catalog = data
+      .map(toProduct)
+      .filter((p): p is Product => p !== null)
+      .sort((a, b) => a.id - b.id);
+    if (catalog.length > 0) return catalog;
+  }
+  return null;
+}
+
+/** Um produto da API (GET /products/{id}); null => usar o local. */
+export async function fetchProduct(id: number): Promise<Product | null> {
+  for (const path of [`/products/${id}`, `/api/products/${id}`]) {
+    const data = await fetchJson(`${API_URL}${path}`);
+    const product = toProduct(data);
+    if (product) return product;
+  }
+  return null;
+}
 
 export type Prediction = {
   label: SentimentLabel;

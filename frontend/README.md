@@ -32,6 +32,8 @@ O front fala com a API FastAPI em `NEXT_PUBLIC_API_URL` (padrão
 `http://localhost:8000`, ver `.env.example`). Contrato real, verificado
 contra o backend em 31/out/2026:
 
+- `GET /products` → `[{ "id": 1, "name": "...", "category": "Casa", "price_cents": 8990, "color": "...", "image_url": "...", "rating": 4.7, "reviews_count": 42 }]` (catálogo; o front mapeia para o tipo local: `price = price_cents/100`, `image = image_url`, `reviews = reviews_count`; o `badge` — "Mais vendido"/"Novo" — não existe no banco e é reaproveitado do arquivo local, pelo id)
+- `GET /products/{id}` → um `ProductOut` como acima
 - `POST /predict` `{ "text": "..." }` → `{ "label": "positive"|"neutral"|"negative", "label_pt": "positiva"|"neutra"|"negativa", "probabilities": {...}, "confidence": 0.93, "model_name": "tfidf-logreg", "model_version": "1.0.0" }`
 - `GET /products/{id}/sentiment` → `{ "product_id": 1, "total_reviews": 6, "avg_stars": 4.33, "counts": {"positive": 5, "neutral": 1, "negative": 0}, "percentages": {"positive": 83.3, ...}, "top_positive_terms": [...], "top_negative_terms": [...] }`
 - `GET /products/{id}/reviews` → `[{ "id": 1, "product_id": 1, "author": "...", "stars": 5, "text": "...", "source": "seed", "label": "positive", "confidence": 0.95 }]`
@@ -54,11 +56,21 @@ de nome.
   arquivo, nomes explícitos, sem duplicação. O detalhamento do SOLID
   do projeto está no [README da raiz](../README.md).
 
+**Catálogo — API primeiro, arquivo local como reserva:** a home, o detalhe
+do produto e o `/ops` buscam o catálogo na API (`GET /products`,
+`GET /products/{id}`, via `fetchProducts`/`fetchProduct` em `src/lib/api.ts`)
+e só usam `src/lib/products.ts` (dados exatos do Figma) se a API não
+responder. Verificado em 01/nov/2026: a API devolve os 50 produtos e o
+mapeamento casa 1:1 com o arquivo local (nome, preço, imagem, categoria;
+0 divergências).
+
 **Sem o backend, nada quebra:** o site usa o catálogo local
 (`src/lib/products.ts`, dados exatos do Figma) e avaliações sintéticas de
 demonstração (`src/lib/reviews.ts`), e mostra um aviso de “modo offline” na
-página do produto. Com a API no ar, o termômetro e a classificação ao vivo
-passam a usar os dados reais do Postgres.
+página do produto. Com a API no ar, o catálogo, o termômetro e a
+classificação ao vivo passam a usar os dados reais do Postgres. O `/ops`
+é `force-dynamic`: busca o catálogo por requisição, sem congelar o dado
+local no build.
 
 ## Páginas
 

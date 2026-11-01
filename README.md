@@ -151,7 +151,15 @@ API fora do Docker: `cd backend && uvicorn app.main:app --reload --port 8000`.
 Contrato de campos (para o frontend): sentimento usa `counts` /
 `percentages` (chaves `positive`, `neutral`, `negative`), `total_reviews` e
 `avg_stars`; review usa `stars` (1–5, não `rating`); `POST /reviews` recebe
-`{product_id, author, stars, text}`.
+`{product_id, author, stars, text}`; produto usa `price_cents` (preço em
+centavos), `image_url` e `reviews_count` — o front mapeia para `price`
+(em reais), `image` e `reviews` em `src/lib/api.ts`.
+
+Catálogo (desde 01/nov/2026): a home, o detalhe do produto e o `/ops`
+buscam o catálogo na API (`GET /products`, `GET /products/{id}`) e só usam
+o arquivo local `frontend/src/lib/products.ts` se a API não responder
+(verificado: 50 produtos, 0 divergências contra o arquivo local; o `badge`
+vem do arquivo local, pois não existe no banco).
 
 ## Modelos e métricas
 
