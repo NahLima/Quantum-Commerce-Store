@@ -10,6 +10,8 @@ Endpoints (contrato público, inalterado pela refatoração):
     GET  /products/{id}
     GET  /products/{id}/sentiment   (agregado: % pos/neu/neg, média de estrelas,
                                      termos mais positivos/negativos)
+    GET  /products/{id}/summary     (resumo em prosa: Gemini em cache, ou
+                                     determinístico; gera em 2º plano se preciso)
     GET  /products/{id}/reviews
     POST /reviews                   (salva + prevê sentimento)
     POST /predict                   (classifica um texto avulso)
@@ -17,7 +19,7 @@ Endpoints (contrato público, inalterado pela refatoração):
 
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -26,20 +28,24 @@ from app.dependencies import (
     get_product_service,
     get_review_service,
     get_sentiment_service,
+    get_summary_service,
 )
 from app.schemas import (
     PredictIn,
     PredictOut,
     ProductOut,
+    ProductSummaryOut,
     ReviewIn,
     ReviewOut,
     SentimentSummary,
 )
 from app.services import (
+    MIN_REVIEWS_FOR_AI_SUMMARY,
     ProductNotFoundError,
     ProductService,
     ReviewService,
     SentimentService,
+    SummaryService,
 )
 from ml.labels import MODEL_DIR
 from ml.predictors import TfidfLogRegPredictor
@@ -109,6 +115,29 @@ def product_sentiment(
     service: SentimentService = Depends(get_sentiment_service),
 ):
     return service.summarize(product_id)
+
+
+@app.get("/products/{product_id}/summary", response_model=ProductSummaryOut)
+def product_summary(
+    product_id: int,
+    background_tasks: BackgroundTasks,
+    service: SummaryService = Depends(get_summary_service),
+):
+    """Resumo em prosa das avaliações do produto.
+
+    Devolve o resumo em cache quando ele corresponde às avaliações atuais;
+    caso contrário devolve a versão determinística na hora e agenda a
+    geração com o Gemini em segundo plano (a próxima visita já vê o resumo
+    com IA). Sem chave do Gemini, sempre devolve o determinístico.
+    """
+    out = service.get_summary(product_id)
+    if (
+        out.source == "deterministic"
+        and out.review_count >= MIN_REVIEWS_FOR_AI_SUMMARY
+        and service.gemini_available
+    ):
+        background_tasks.add_task(service.refresh_summary, product_id)
+    return out
 
 
 @app.post("/predict", response_model=PredictOut)

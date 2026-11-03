@@ -17,9 +17,11 @@ import {
   fetchProduct,
   fetchProductReviews,
   fetchProductSentiment,
+  fetchProductSummary,
   predictSentiment,
   submitReview,
   type Prediction,
+  type ProductSummary,
 } from '../../../lib/api';
 import { useCart } from '../../../components/CartContext';
 import Stars from '../../../components/Stars';
@@ -93,6 +95,9 @@ export default function ProductPage() {
   const [stats, setStats] = useState<SentimentStats | null>(() =>
     product ? computeSentimentStats(getLocalReviews(product.id, product.name)) : null,
   );
+  // Resumo em prosa da API (Gemini em cache, quando houver). null => o
+  // resumo determinístico local (buildReviewSummary) é usado no lugar.
+  const [summary, setSummary] = useState<ProductSummary | null>(null);
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
 
   // Formulário de avaliação
@@ -129,13 +134,20 @@ export default function ProductPage() {
   useEffect(() => {
     if (!product) return;
     let cancelled = false;
-    Promise.all([fetchProductSentiment(product.id), fetchProductReviews(product.id)]).then(
-      ([apiStats, apiReviews]) => {
+    Promise.all([
+      fetchProductSentiment(product.id),
+      fetchProductReviews(product.id),
+      fetchProductSummary(product.id),
+    ]).then(
+      ([apiStats, apiReviews, apiSummary]) => {
         if (cancelled) return;
         if (apiStats && apiReviews) {
           setApiOnline(true);
           setStats(apiStats);
           setReviews(apiReviews);
+          // O resumo é independente do termômetro/lista: se o endpoint
+          // falhar, o resumo determinístico local é usado (summary null).
+          setSummary(apiSummary);
         } else {
           setApiOnline(false);
         }
@@ -214,6 +226,9 @@ export default function ProductPage() {
     setReviews((current) => {
       const next = [newReview, ...current];
       setStats(computeSentimentStats(next));
+      // Avaliação nova invalida o resumo em cache: volta ao determinístico
+      // até a próxima visita (quando o backend já o regenerou em 2º plano).
+      setSummary(null);
       return next;
     });
     setFormStatus({
@@ -341,7 +356,12 @@ export default function ProductPage() {
           <h2>Avaliações.</h2>
           {stats && (
             <>
-              <p className="reviews-summary-text">{buildReviewSummary(stats)}</p>
+              <p className="reviews-summary-text">
+                {summary?.text ?? buildReviewSummary(stats)}
+              </p>
+              {summary?.source === 'gemini' && (
+                <span className="api-note">✦ Resumo de opiniões gerado por IA</span>
+              )}
               {apiOnline === true && (
                 <span className="api-note">● Dados ao vivo da API (Postgres + modelo de ML)</span>
               )}

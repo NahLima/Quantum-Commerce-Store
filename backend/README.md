@@ -80,9 +80,36 @@ Frontend (Next.js) roda separadamente: `cd frontend && npm run dev`
 | GET | `/products?category=&search=` | lista produtos (50 do Figma) |
 | GET | `/products/{id}` | detalhe (404 se inexistente) |
 | GET | `/products/{id}/sentiment` | % pos/neu/neg, média de estrelas, termos top |
+| GET | `/products/{id}/summary` | resumo em prosa das avaliações (Gemini em cache, ou determinístico) |
 | GET | `/products/{id}/reviews?limit=50` | reviews com predição (`label`, `confidence`) |
 | POST | `/reviews` | salva review + prevê sentimento (201) |
 | POST | `/predict` | `{text}` → `{label, label_pt, probabilities, confidence, model_name, model_version}` |
+
+## Resumo de avaliações com IA
+
+`GET /products/{id}/summary` devolve um parágrafo em prosa estilo
+Mercado Livre (`{product_id, summary, source, model, review_count, cached}`).
+`source` é `"gemini"` (resumo em cache) ou `"deterministic"` (fallback).
+
+- **Geração:** `SummaryService` monta o prompt (`app/summary_prompt.py` —
+  avaliações do produto + regras de fidelidade: só afirmar o que está nas
+  avaliações, sem inventar atributo, preço ou defeito) e chama o Gemini
+  (`app/gemini_client.py`, modelo `gemini-3.8-flash`, `temperature` 0.2).
+  A chave vem de `GEMINI_API_KEY` no ambiente (ver `.env.example`); sem
+  ela, o endpoint sempre devolve o determinístico — nunca quebra.
+- **Cache:** o resumo é salvo na tabela `summaries` com o hash das
+  avaliações atuais. Avaliação nova invalida o cache (o hash muda) e o
+  endpoint devolve o determinístico na hora, agendando a regeneração em
+  segundo plano (a próxima visita já vê o resumo com IA). Mínimo de 3
+  avaliações para gerar com IA; abaixo disso, só o determinístico.
+- **Aquecimento:** `python backend/scripts/generate_summaries.py`
+  (da raiz do repo) gera o resumo de todos os produtos de uma vez, para a
+  página nunca esperar o LLM. `--product N` gera só um; `--force` regera
+  mesmo com cache.
+- **Determinístico:** `deterministic_summary()` (em `app/services.py`)
+  segue as mesmas regras do `buildReviewSummary` do front — contagens +
+  termos mais citados. É o fallback em todos os casos (sem chave, LLM
+  fora do ar, poucas avaliações, cache desatualizado).
 
 ## Modelo
 
@@ -154,13 +181,19 @@ são versionados; o script falha com mensagem clara sem eles
 cd backend && .venv/bin/python -m pytest tests/ -v
 ```
 
-8 testes, todos com o banco SQLite em memória/fallback (`USE_SQLITE=1` é
+22 testes, todos com o banco SQLite em memória/fallback (`USE_SQLITE=1` é
 setado em `tests/test_api.py` antes dos imports):
 
 - `test_api.py`: health, listagem de produtos, 404, `/predict` (fallback),
   criar review + persistência da predição.
 - `test_sentiment.py`: regra de rótulo por estrelas, LogReg treina e acerta
   casos claros, `predict()` nunca quebra (inclui texto vazio).
+- `test_summary.py` (12): prompt do resumo (contém as avaliações e as
+  regras de fidelidade), resumo determinístico, `GeminiClient` (sem chave
+  → indisponível; resposta HTTP simulada), endpoint do resumo (cache,
+  invalidação por avaliação nova, falha do LLM, poucas avaliações, 404).
+  O cliente do Gemini é trocado por um fake (override de
+  `get_gemini_client`); a cadeia real é exercida, só a rede é simulada.
 
 ## OOP, SOLID e Clean Code
 

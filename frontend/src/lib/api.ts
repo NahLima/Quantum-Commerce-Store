@@ -268,6 +268,21 @@ export async function fetchProductSentiment(productId: number): Promise<Sentimen
   return null;
 }
 
+export type ProductSummary = { text: string; source: 'gemini' | 'deterministic' };
+
+/** Resumo em prosa das avaliações de um produto (GET /products/{id}/summary).
+ *  null => usar o resumo determinístico local (`buildReviewSummary`). O
+ *  endpoint devolve o resumo do Gemini em cache quando ele corresponde às
+ *  avaliações atuais, e a versão determinística nos demais casos. */
+export async function fetchProductSummary(productId: number): Promise<ProductSummary | null> {
+  const data = await fetchJson(`${API_URL}/products/${productId}/summary`);
+  if (!data || typeof data !== 'object') return null;
+  const summary = (data as Record<string, unknown>).summary;
+  const source = (data as Record<string, unknown>).source;
+  if (typeof summary !== 'string' || !summary.trim()) return null;
+  return { text: summary, source: source === 'gemini' ? 'gemini' : 'deterministic' };
+}
+
 /** Lista de avaliações de um produto a partir da API; null => usar fallback local. */
 export async function fetchProductReviews(productId: number): Promise<Review[] | null> {
   const paths = [`/products/${productId}/reviews`, `/api/products/${productId}/reviews`];

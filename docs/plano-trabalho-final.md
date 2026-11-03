@@ -263,6 +263,13 @@ produto quebrado; positivo 0,967 num elogio) e `POST /reviews` → 201.
   % positiva/neutra/negativa), "o que gostaram / o que reclamaram"
   (termos de maior coeficiente) e avaliações com selo de sentimento
   e confiança. Igual ao Mercado Livre, na linguagem visual Quantum.
+  Acima da lista, um resumo em prosa das avaliações (`GET
+  /products/{id}/summary`): parágrafo estilo Mercado Livre gerado
+  por LLM (Gemini) a partir das avaliações do produto, com regras
+  de fidelidade (só afirmar o que está nas avaliações; sem inventar
+  atributo, preço ou defeito) e cache por produto — sem chave do
+  Gemini, ou com poucas avaliações, a página mostra o resumo
+  determinístico (contagens + termos), sem quebrar.
 - **Operação, no painel `/ops`:** sentimento por categoria, top
   produtos por share de negativas, alerta > 25%. Ação: revisar
   fornecedor, descrição, lote ou atendimento — e medir se o
@@ -327,10 +334,16 @@ produto quebrado; positivo 0,967 num elogio) e `POST /reviews` → 201.
 
 ### 4.4 Evolução futura (fora do escopo desta disciplina)
 
-BERT / Transformers em português, aspectos (preço, entrega,
-qualidade) em vez de só sentimento global, e, mais adiante, um
-assistente que resume as reclamações por produto. Nada disso é base
-desta proposta, como pede o enunciado.
+BERT / Transformers em português e aspectos (preço, entrega,
+qualidade) em vez de só sentimento global. O resumo das avaliações
+por produto já existe como funcionalidade (Gemini + cache, ver
+§3.5), e o próximo passo é o experimento documentado em
+`notebooks/resumo-avaliacoes-mt5-colab.ipynb`: fine-tunar um modelo
+pequeno (mT5-small) em pares (avaliações → resumo) destilados do
+Gemini, avaliado por ROUGE + checagem manual de alucinação — se
+ficar bom, ele substitui o Gemini; se não, fica a comparação.
+Nada disso é base desta proposta, como pede o enunciado: o núcleo
+segue sendo o classificador TF-IDF + LogReg/MLP.
 
 ---
 

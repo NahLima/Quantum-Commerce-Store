@@ -61,3 +61,25 @@ class Prediction(Base):
         DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     review: Mapped["Review | None"] = relationship("Review", back_populates="prediction")
+
+
+class Summary(Base):
+    """Resumo de avaliações de um produto, gerado por LLM e cacheado.
+
+    Uma linha por produto (o resumo é refeito quando as avaliações mudam:
+    `reviews_hash` é o hash dos textos atuais). Sem o hash, a API não
+    saberia que o resumo ficou desatualizado depois de uma avaliação nova.
+    """
+
+    __tablename__ = "summaries"
+
+    product_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("products.id"), primary_key=True
+    )
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    model: Mapped[str] = mapped_column(String(60), nullable=False, default="")
+    review_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    reviews_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.models import Prediction, Product, Review
+from app.models import Prediction, Product, Review, Summary
 from ml.interfaces import PredictionResult
 
 DEFAULT_REVIEW_LIMIT = 50
@@ -124,3 +124,18 @@ class PredictionRepository:
 
     def commit(self) -> None:
         self._db.commit()
+
+
+class SummaryRepository:
+    """Acesso a `summaries` (resumo gerado por LLM, um por produto)."""
+
+    def __init__(self, db: Session) -> None:
+        self._db = db
+
+    def get(self, product_id: int) -> Summary | None:
+        return self._db.get(Summary, product_id)
+
+    def save(self, summary: Summary) -> Summary:
+        saved = self._db.merge(summary)
+        self._db.commit()
+        return saved

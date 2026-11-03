@@ -12,15 +12,18 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.gemini_client import GeminiClient
 from app.repositories import (
     PredictionRepository,
     ProductRepository,
     ReviewRepository,
+    SummaryRepository,
 )
 from app.services import (
     ProductService,
     ReviewService,
     SentimentService,
+    SummaryService,
     ProductTopTerms,
 )
 from ml.interfaces import SentimentPredictor
@@ -70,3 +73,21 @@ def get_review_service(
     predictor: SentimentPredictor = Depends(get_predictor),
 ) -> ReviewService:
     return ReviewService(products, reviews, predictions, predictor)
+
+
+def get_summary_repository(db: Session = Depends(get_db)) -> SummaryRepository:
+    return SummaryRepository(db)
+
+
+def get_gemini_client() -> GeminiClient:
+    return GeminiClient()
+
+
+def get_summary_service(
+    products: ProductRepository = Depends(get_product_repository),
+    reviews: ReviewRepository = Depends(get_review_repository),
+    summaries: SummaryRepository = Depends(get_summary_repository),
+    sentiment: SentimentService = Depends(get_sentiment_service),
+    gemini: GeminiClient = Depends(get_gemini_client),
+) -> SummaryService:
+    return SummaryService(products, reviews, summaries, sentiment, gemini)

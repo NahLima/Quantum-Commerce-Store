@@ -142,6 +142,14 @@ por célula, com o CSV lido do Drive): `notebooks/treino-sentimento-olist-colab.
 cd ../frontend && npm install && npm run dev   # loja em http://localhost:3000
 ```
 
+Resumo com IA (opcional): o endpoint `GET /products/{id}/summary` gera o
+parágrafo estilo Mercado Livre com o Gemini. Precisa da chave do Google AI
+Studio em `GEMINI_API_KEY` — no `backend/.env` (uvicorn local) e no `.env`
+da raiz (o `docker-compose.yml` a interpola para o container da API). Sem
+a chave, o resumo fica na versão determinística e nada quebra. Para gerar
+os resumos de todos os produtos de uma vez (cache): `python
+backend/scripts/generate_summaries.py` (da raiz do repo).
+
 Sem Docker (testes locais): `USE_SQLITE=1` usa `backend/app.db`.
 API fora do Docker: `cd backend && uvicorn app.main:app --reload --port 8000`.
 
@@ -153,6 +161,7 @@ API fora do Docker: `cd backend && uvicorn app.main:app --reload --port 8000`.
 | GET | `/products?category=&search=` | lista produtos (50 do Figma) | lista de `ProductOut` |
 | GET | `/products/{id}` | detalhe | `ProductOut` (404 se inexistente) |
 | GET | `/products/{id}/sentiment` | termômetro do produto | `{product_id, total_reviews, avg_stars, counts, percentages, top_positive_terms, top_negative_terms}` |
+| GET | `/products/{id}/summary` | resumo em prosa das avaliações | `{product_id, summary, source, model, review_count, cached}` — `source` é `gemini` (em cache) ou `deterministic` |
 | GET | `/products/{id}/reviews?limit=50` | reviews com predição | lista de `ReviewOut` (`label`, `confidence`) |
 | POST | `/reviews` | salva review + prevê sentimento | 201 `ReviewOut` |
 | POST | `/predict` | classifica um texto avulso | `{label, label_pt, probabilities, confidence, model_name, model_version}` |

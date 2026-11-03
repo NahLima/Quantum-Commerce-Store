@@ -67,3 +67,14 @@ class SentimentSummary(BaseModel):
     percentages: dict[str, float]
     top_positive_terms: list[str] = []
     top_negative_terms: list[str] = []
+
+
+class ProductSummaryOut(BaseModel):
+    """Resumo de avaliações de um produto (contrato de GET /products/{id}/summary)."""
+
+    product_id: int
+    summary: str
+    source: str  # "gemini" (em cache) ou "deterministic" (sem LLM)
+    model: str | None = None
+    review_count: int
+    cached: bool = False

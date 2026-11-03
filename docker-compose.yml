@@ -32,6 +32,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://quantum:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-quantum}
       MODEL_DIR: /app/ml/artifacts
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:
