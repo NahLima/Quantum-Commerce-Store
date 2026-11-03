@@ -90,6 +90,7 @@ class GeminiClient:
                 if not text:
                     self.last_error = "resposta vazia"
                     return None
+                self.last_error = None  # o retry deu certo: não há erro
                 return text
             self.last_error = f"HTTP {response.status_code}"
             if response.status_code in RETRYABLE_STATUS and attempt == 1:
