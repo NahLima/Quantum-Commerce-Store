@@ -194,6 +194,34 @@ def test_gemini_client_returns_none_on_error():
     assert client_gemini.generate("prompt") is None
 
 
+def test_gemini_client_records_last_error():
+    """A falha não é silenciosa: o motivo fica em `last_error`."""
+
+    def failing(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, json={"error": {"message": "overloaded"}})
+
+    client_gemini = GeminiClient(
+        api_key="fake-key", transport=httpx.MockTransport(failing)
+    )
+    assert client_gemini.generate("prompt") is None
+    assert client_gemini.last_error == "HTTP 503"
+
+    def succeeding(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+        )
+
+    client_ok = GeminiClient(
+        api_key="fake-key", transport=httpx.MockTransport(succeeding)
+    )
+    assert client_ok.generate("prompt") == "ok"
+    assert client_ok.last_error is None
+
+    client_no_key = GeminiClient(api_key="")
+    assert client_no_key.generate("prompt") is None
+    assert client_no_key.last_error.startswith("sem chave")
+
+
 def test_summary_endpoint_without_key_returns_deterministic():
     r = client.get(f"/products/{TEST_PRODUCT_ID}/summary")
     assert r.status_code == 200

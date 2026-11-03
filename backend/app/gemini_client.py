@@ -20,7 +20,13 @@ TIMEOUT_S = 120.0
 
 
 class GeminiClient:
-    """Uma chamada `generateContent`; devolve o texto ou None (falha)."""
+    """Uma chamada `generateContent`; devolve o texto ou None (falha).
+
+    A falha nunca é silenciosa: `last_error` guarda o motivo (status HTTP
+    ou tipo do erro de rede), para o script de aquecimento — e quem roda
+    ele — saber se a chave está errada, o modelo sobrecarregado ou a rede
+    caiu, em vez de só "falhou".
+    """
 
     def __init__(
         self,
@@ -31,6 +37,7 @@ class GeminiClient:
         self._api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
         self._model = model or os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
         self._transport = transport
+        self.last_error: str | None = None
 
     @property
     def available(self) -> bool:
@@ -41,7 +48,9 @@ class GeminiClient:
         return self._model
 
     def generate(self, prompt: str) -> str | None:
+        self.last_error = None
         if not self.available:
+            self.last_error = "sem chave (GEMINI_API_KEY não definida)"
             return None
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -59,9 +68,18 @@ class GeminiClient:
                     url, headers={"x-goog-api-key": self._api_key}, json=payload
                 )
             if response.status_code != 200:
+                self.last_error = f"HTTP {response.status_code}"
                 return None
-            parts = response.json()["candidates"][0]["content"]["parts"]
+            candidates = response.json().get("candidates") or []
+            if not candidates:
+                self.last_error = "resposta sem candidatos"
+                return None
+            parts = candidates[0].get("content", {}).get("parts") or []
             text = "".join(part.get("text", "") for part in parts).strip()
-            return text or None
-        except Exception:
+            if not text:
+                self.last_error = "resposta vazia"
+                return None
+            return text
+        except Exception as exc:  # timeout, DNS, conexão recusada...
+            self.last_error = type(exc).__name__
             return None

@@ -28,7 +28,11 @@ from app.repositories import (
     ReviewRepository,
     SummaryRepository,
 )
-from app.services import SentimentService, SummaryService
+from app.services import (
+    MIN_REVIEWS_FOR_AI_SUMMARY,
+    SentimentService,
+    SummaryService,
+)
 
 
 def main() -> int:
@@ -62,12 +66,22 @@ def main() -> int:
             if current.source == "gemini" and not args.force:
                 skipped += 1
                 continue
+            if current.review_count < MIN_REVIEWS_FOR_AI_SUMMARY:
+                failed += 1
+                print(
+                    f"produto {product_id}: poucas avaliações "
+                    f"({current.review_count}, mínimo {MIN_REVIEWS_FOR_AI_SUMMARY})."
+                )
+                continue
             if service.refresh_summary(product_id):
                 generated += 1
                 print(f"produto {product_id}: resumo gerado ({client.model}).")
             else:
                 failed += 1
-                print(f"produto {product_id}: falhou (poucas avaliações ou erro).")
+                print(
+                    f"produto {product_id}: erro do Gemini "
+                    f"({client.last_error or 'sem resposta'})."
+                )
         print(f"gerados={generated} em cache={skipped} falhados={failed}")
         return 0 if failed == 0 else 1
     finally:
