@@ -12,11 +12,18 @@ Modelo padrão: `gemini-3.8-flash`, verificado com a chave dela em
 from __future__ import annotations
 
 import os
+import time
 
 import httpx
 
 DEFAULT_MODEL = "gemini-3.8-flash"
 TIMEOUT_S = 120.0
+# 429 (limite de requisições) e 503 (sobrecarga) são transitórios: vale
+# uma segunda tentativa depois de uma espera. O free tier do Gemini
+# limita requisições por minuto — sem isso, o aquecimento (50 produtos
+# em sequência) esbarra no 429 e nenhum resumo é gerado.
+RETRYABLE_STATUS = frozenset({429, 503})
+RETRY_WAIT_S = 60.0
 
 
 class GeminiClient:
@@ -33,10 +40,12 @@ class GeminiClient:
         api_key: str | None = None,
         model: str | None = None,
         transport: httpx.BaseTransport | None = None,
+        retry_wait_s: float = RETRY_WAIT_S,
     ) -> None:
         self._api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
         self._model = model or os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
         self._transport = transport
+        self._retry_wait_s = retry_wait_s
         self.last_error: str | None = None
 
     @property
@@ -60,26 +69,31 @@ class GeminiClient:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.2, "maxOutputTokens": 300},
         }
-        try:
-            with httpx.Client(
-                timeout=TIMEOUT_S, transport=self._transport, trust_env=False
-            ) as client:
-                response = client.post(
-                    url, headers={"x-goog-api-key": self._api_key}, json=payload
-                )
-            if response.status_code != 200:
-                self.last_error = f"HTTP {response.status_code}"
+        for attempt in (1, 2):
+            try:
+                with httpx.Client(
+                    timeout=TIMEOUT_S, transport=self._transport, trust_env=False
+                ) as client:
+                    response = client.post(
+                        url, headers={"x-goog-api-key": self._api_key}, json=payload
+                    )
+            except Exception as exc:  # timeout, DNS, conexão recusada...
+                self.last_error = type(exc).__name__
                 return None
-            candidates = response.json().get("candidates") or []
-            if not candidates:
-                self.last_error = "resposta sem candidatos"
-                return None
-            parts = candidates[0].get("content", {}).get("parts") or []
-            text = "".join(part.get("text", "") for part in parts).strip()
-            if not text:
-                self.last_error = "resposta vazia"
-                return None
-            return text
-        except Exception as exc:  # timeout, DNS, conexão recusada...
-            self.last_error = type(exc).__name__
+            if response.status_code == 200:
+                candidates = response.json().get("candidates") or []
+                if not candidates:
+                    self.last_error = "resposta sem candidatos"
+                    return None
+                parts = candidates[0].get("content", {}).get("parts") or []
+                text = "".join(part.get("text", "") for part in parts).strip()
+                if not text:
+                    self.last_error = "resposta vazia"
+                    return None
+                return text
+            self.last_error = f"HTTP {response.status_code}"
+            if response.status_code in RETRYABLE_STATUS and attempt == 1:
+                time.sleep(self._retry_wait_s)
+                continue
             return None
+        return None

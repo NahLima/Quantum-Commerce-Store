@@ -18,8 +18,15 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))  # backend/
+
+# Pausa entre produtos: o free tier do Gemini limita requisições por
+# minuto — sem ela, 50 chamadas em sequência esbarram no HTTP 429 e o
+# aquecimento gera zero resumos. 7 s entre chamadas (~6/min) fica abaixo
+# do limite; 50 produtos levam uns 8–10 minutos no total.
+DELAY_BETWEEN_PRODUCTS_S = 7.0
 
 from app.database import SessionLocal
 from app.gemini_client import GeminiClient
@@ -61,7 +68,7 @@ def main() -> int:
         )
         ids = [args.product] if args.product else [p.id for p in products.list()]
         generated = skipped = failed = 0
-        for product_id in ids:
+        for index, product_id in enumerate(ids):
             current = service.get_summary(product_id)
             if current.source == "gemini" and not args.force:
                 skipped += 1
@@ -72,8 +79,7 @@ def main() -> int:
                     f"produto {product_id}: poucas avaliações "
                     f"({current.review_count}, mínimo {MIN_REVIEWS_FOR_AI_SUMMARY})."
                 )
-                continue
-            if service.refresh_summary(product_id):
+            elif service.refresh_summary(product_id):
                 generated += 1
                 print(f"produto {product_id}: resumo gerado ({client.model}).")
             else:
@@ -82,6 +88,8 @@ def main() -> int:
                     f"produto {product_id}: erro do Gemini "
                     f"({client.last_error or 'sem resposta'})."
                 )
+            if index < len(ids) - 1:
+                time.sleep(DELAY_BETWEEN_PRODUCTS_S)
         print(f"gerados={generated} em cache={skipped} falhados={failed}")
         return 0 if failed == 0 else 1
     finally:

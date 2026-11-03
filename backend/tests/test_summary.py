@@ -201,10 +201,48 @@ def test_gemini_client_records_last_error():
         return httpx.Response(503, json={"error": {"message": "overloaded"}})
 
     client_gemini = GeminiClient(
-        api_key="fake-key", transport=httpx.MockTransport(failing)
+        api_key="fake-key", transport=httpx.MockTransport(failing), retry_wait_s=0
     )
     assert client_gemini.generate("prompt") is None
     assert client_gemini.last_error == "HTTP 503"
+
+
+def test_gemini_client_retries_once_on_rate_limit():
+    """429/503: uma segunda tentativa depois da espera; se ela passar, vale."""
+
+    calls = {"n": 0}
+
+    def flaky(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429, json={"error": {"message": "slow down"}})
+        return httpx.Response(
+            200, json={"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+        )
+
+    client_gemini = GeminiClient(
+        api_key="fake-key", transport=httpx.MockTransport(flaky), retry_wait_s=0
+    )
+    assert client_gemini.generate("prompt") == "ok"
+    assert calls["n"] == 2
+    assert client_gemini.last_error is None
+
+
+def test_gemini_client_does_not_retry_on_unauthorized():
+    """401 é erro da chave, não transitório: não adianta tentar de novo."""
+
+    calls = {"n": 0}
+
+    def unauthorized(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        return httpx.Response(401, json={"error": {"message": "bad key"}})
+
+    client_gemini = GeminiClient(
+        api_key="fake-key", transport=httpx.MockTransport(unauthorized), retry_wait_s=0
+    )
+    assert client_gemini.generate("prompt") is None
+    assert calls["n"] == 1
+    assert client_gemini.last_error == "HTTP 401"
 
     def succeeding(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
