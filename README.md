@@ -109,7 +109,7 @@ quantum-commerce-store/
     │   ├── seed_reviews.csv    # gerado pelo seed
     │   └── olist_order_reviews_dataset.csv   # OPCIONAL: CSV do Olist (não versionado)
     ├── seed.py             # ProductSeeder + ReviewSeeder
-    └── tests/              # pytest (8 testes)
+    └── tests/              # pytest (25 testes)
 ```
 
 ## Como rodar (Mac)
@@ -142,13 +142,40 @@ por célula, com o CSV lido do Drive): `notebooks/treino-sentimento-olist-colab.
 cd ../frontend && npm install && npm run dev   # loja em http://localhost:3000
 ```
 
-Resumo com IA (opcional): o endpoint `GET /products/{id}/summary` gera o
-parágrafo estilo Mercado Livre com o Gemini. Precisa da chave do Google AI
-Studio em `GEMINI_API_KEY` — no `backend/.env` (uvicorn local) e no `.env`
-da raiz (o `docker-compose.yml` a interpola para o container da API). Sem
-a chave, o resumo fica na versão determinística e nada quebra. Para gerar
-os resumos de todos os produtos de uma vez (cache): `python
-backend/scripts/generate_summaries.py` (da raiz do repo).
+### Resumo com IA (opcional)
+
+O endpoint `GET /products/{id}/summary` gera o parágrafo estilo Mercado
+Livre com o Gemini. Precisa da chave do Google AI Studio em
+`GEMINI_API_KEY` — no `backend/.env` (uvicorn local) e no `.env` da raiz
+(o `docker-compose.yml` a interpola para o container da API). Sem a chave,
+o resumo fica na versão determinística e nada quebra.
+
+**Testar se a chave está ok** (do `backend/`, com o venv ativado):
+
+```bash
+python -c "from dotenv import load_dotenv; load_dotenv('.env'); from app.gemini_client import GeminiClient; c = GeminiClient(); print('chave:', c.available); print(repr(c.generate('Responda com a palavra: ok'))); print('erro:', c.last_error)"
+```
+
+- `'ok'` → chave e modelo funcionando.
+- `None` + `HTTP 401` → a chave no `backend/.env` está errada ou revogada;
+  troque pela chave nova do AI Studio.
+- `None` + `HTTP 429` → limite de requisições do plano gratuito; espere
+  1–2 min e tente de novo.
+- `None` + `HTTP 503` → modelo sobrecarregado; espere, ou troque o modelo
+  com `GEMINI_MODEL=gemini-flash-lite-latest` no `backend/.env`.
+
+**Gerar os resumos de todos os produtos de uma vez** (aquece o cache; da
+raiz do repo, com o Docker no ar e a chave no `backend/.env`):
+
+```bash
+backend/.venv/bin/python backend/scripts/generate_summaries.py
+# só um produto:  ... --product 2
+# regenerar mesmo os que já têm resumo:  ... --force
+```
+
+O script espera 7 s entre produtos (limite do plano gratuito) — os 50
+produtos levam uns 8–10 min. O motivo de cada falha aparece por linha
+("poucas avaliações (n, mínimo 3)" ou "erro do Gemini (HTTP ...)").
 
 Sem Docker (testes locais): `USE_SQLITE=1` usa `backend/app.db`.
 API fora do Docker: `cd backend && uvicorn app.main:app --reload --port 8000`.
@@ -207,75 +234,7 @@ subamostra de 12.000 linhas porque densifica o TF-IDF. O detalhe
 completo (matriz de confusão, top termos) está no plano em
 `docs/plano-trabalho-final.md`.
 
-### Golden set Quantum (transferência para a loja)
-
-Avaliação manual na loja, 01/nov/2026 — 24 avaliações novas em PT-BR
-(8 por classe, produtos reais do Figma), com rótulos aprovados pela
-Naiara (G20, G21 e G23 mantidos neutros, por decisão dela). Rodado
-com o LogReg treinado no Olist, sem re-treino — arquivo
-`eval/golden_set.csv`, script `eval/eval_golden_set.py`:
-
-| classe | acerto |
-|---|---|
-| positiva | 6/8 |
-| negativa | 5/8 |
-| neutra | 2/8 |
-| **geral** | **13/24 = 0,542** |
-
-Contra 0,780 de acurácia no teste do Olist: o modelo transfere pior
-para a Quantum, e a classe neutra é o gargalo — 5 dos 6 erros de
-neutra viraram positiva (G19 "cumpre o que promete, sem encantar"
-→ positiva 0,904; G24 → positiva 0,861). Coerente com o treino:
-65,7% das 42.687 linhas do Olist com texto são positivas. Só o
-LogReg foi avaliado (o backend só expõe esse preditor; a MLP é só
-artefato de comparação de treino).
-
 > **Aviso honesto:** o treino sintético de demonstração (922 linhas)
 > dá F1 = 1,0 nos dois modelos — artefato dos templates que se
 > sobrepõem, não resultado real. Não apresentar 1,0 como desempenho
 > do modelo.
-
-## OOP, SOLID e Clean Code
-
-Padrão exigido para o projeto: **orientação a objetos, clean code e SOLID
-em toda a estrutura do código**. O backend foi refatorado para camadas
-(`routes → services → repositories`, `ml/` por interfaces); o detalhe
-completo está em `backend/README.md`.
-
-| Princípio | Onde (classe / arquivo) |
-|---|---|
-| **S — Responsabilidade única** | Cada classe faz uma coisa: `ProductRepository` só acessa dados (`app/repositories.py`); `ReviewService` só orquestra review+predição (`app/services.py`); `ModelTrainer` só treina (`ml/training.py`); `MetricsReporter` só persiste/imprime métricas |
-| **O — Aberto/fechado** | Novo modelo = nova classe implementando `SentimentPredictor` (`ml/interfaces.py`, ex.: `TfidfLogRegPredictor` em `ml/predictors.py`); nova fonte = nova classe implementando `ReviewDataSource` (`ml/datasets.py`, ex.: `OlistReviewSource`). Nenhum serviço muda |
-| **L — Substituição de Liskov** | `LexiconFallbackPredictor` e `TfidfLogRegPredictor` são substituíveis em qualquer lugar que espera um `SentimentPredictor`; `OlistReviewSource`, `CsvReviewSource` e `SyntheticReviewSource` são substituíveis onde se espera um `ReviewDataSource` |
-| **I — Segregação de interfaces** | Interfaces pequenas e coesas: `SentimentPredictor` só tem `predict` / `is_available` / `name`; `ReviewDataSource` só tem `load` / `name` — nenhuma classe é obrigada a implementar o que não usa |
-| **D — Inversão de dependência** | `ReviewService` e `ModelTrainer` dependem das abstrações `SentimentPredictor` / `ReviewDataSource`, não das implementações; os objetos concretos são montados num só lugar, a composição raiz (`app/dependencies.py` p/ API, CLI de `ml/train.py` p/ treino) |
-
-Clean code aplicado: nomes em inglês no código (PT-BR só em textos de UI e
-docs), métodos curtos com um nível de abstração, sem duplicação (a regra de
-rótulo por estrelas vive só em `ml/labels.py`), sem números mágicos sem nome
-(`LOGREG_C`, `TFIDF_MAX_FEATURES`, `MIN_REVIEWS_PER_PRODUCT` etc.) e type
-hints em todo o código novo.
-
-## Limitações (a declarar no trabalho)
-
-1. **Docker / Postgres não testados nesta VM** (não há Docker aqui). O
-   `docker-compose.yml`, o `Dockerfile` e a URL `postgresql+psycopg` seguem
-   o padrão, mas a validação real (`docker compose up` + seed no Postgres)
-   precisa acontecer no Mac. Testes, treino e smoke test rodaram com o
-   fallback SQLite (`USE_SQLITE=1`).
-2. **Olist não incluído no repo** (dataset externo do Kaggle, 14 MB).
-   Sem `backend/data/olist_order_reviews_dataset.csv`, o treino usa o
-   sintético — e as métricas desse treino não são generalizáveis
-   (ver aviso acima). O treino real já foi feito em 31/out/2026
-   (F1-macro LogReg 0,635); os artefatos `*.joblib` não são
-   versionados — para reproduzir, baixe o CSV e rode `--olist`.
-3. **Reviews da demo são sintéticas** (234 reviews geradas de templates,
-   seed 42). O termômetro da loja demonstra o fluxo, não a satisfação real
-   de clientes da Quantum — para validar a transferência Olist → Quantum
-   falta um golden set manual de reviews dos 50 produtos.
-4. **Integração frontend ↔ backend:** o contrato da API é o da tabela
-   acima (`total_reviews` / `counts` / `percentages` / `avg_stars`,
-   `stars`). O frontend deve ler esses campos — qualquer leitura de nomes
-   diferentes (`total`, `rating`) precisa ser ajustada no frontend.
-5. Escopo da disciplina: sem CNN/RNN/Transformer/BERT como base — citados
-   apenas como evolução futura. O MLP aqui é o teto de rede neural do trabalho.
