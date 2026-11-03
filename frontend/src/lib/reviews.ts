@@ -181,6 +181,42 @@ export function computeSentimentStats(reviews: Review[]): SentimentStats {
   };
 }
 
+/**
+ * Resumo em prosa das avaliações de UM produto, a partir dos próprios dados
+ * dele (contagens + termos mais citados em elogios e reclamações).
+ *
+ * É determinístico e não inventa nada: só repete o que as avaliações
+ * exibidas na página já dizem, no formato do "Resumo de opiniões" do
+ * Mercado Livre. Sem LLM — a geração de texto livre fica como evolução
+ * futura (ver o plano do trabalho).
+ */
+export function buildReviewSummary(stats: SentimentStats): string {
+  const { total, positive, neutral, negative, topPositiveTerms, topNegativeTerms } = stats;
+  if (total === 0) {
+    return 'Ainda não há avaliações para este produto. Seja a primeira pessoa a contar como foi a sua experiência.';
+  }
+  const dist: string[] = [];
+  if (positive > 0) dist.push(`${positive} ${positive === 1 ? 'positiva' : 'positivas'}`);
+  if (neutral > 0) dist.push(`${neutral} ${neutral === 1 ? 'neutra' : 'neutras'}`);
+  if (negative > 0) dist.push(`${negative} ${negative === 1 ? 'negativa' : 'negativas'}`);
+  const distText =
+    dist.length > 1 ? `${dist.slice(0, -1).join(', ')} e ${dist[dist.length - 1]}` : dist[0];
+  const parts = [`De ${total} ${total === 1 ? 'avaliação' : 'avaliações'}, ${distText}.`];
+  const joinTerms = (terms: { term: string }[]): string => {
+    const names = terms.slice(0, 3).map((t) => t.term);
+    return names.length > 1
+      ? `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}`
+      : names[0];
+  };
+  if (topPositiveTerms.length > 0) {
+    parts.push(`O que mais elogiam: ${joinTerms(topPositiveTerms)}.`);
+  }
+  if (topNegativeTerms.length > 0) {
+    parts.push(`O que mais reclamam: ${joinTerms(topNegativeTerms)}.`);
+  }
+  return parts.join(' ');
+}
+
 export const SENTIMENT_META: Record<
   SentimentLabel,
   { label: string; className: string }

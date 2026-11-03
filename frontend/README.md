@@ -43,6 +43,19 @@ O mapeamento fica todo em `src/lib/api.ts`, que aceita tanto o contrato
 real quanto variações legadas, para o site não quebrar se um campo mudar
 de nome.
 
+Na página do produto, termômetro e lista de avaliações vêm da API juntos
+(`GET /products/{id}/sentiment` + `GET /products/{id}/reviews`, via
+`fetchProductSentiment`/`fetchProductReviews`) e a troca para os dados da
+API é atômica: só acontece quando os dois respondem — antes, o termômetro
+vinha da API e a lista ficava no arquivo local, e a página mostrava "3
+avaliações" no termômetro e 5 comentários na lista (produto 2, 03/nov/2026).
+Os termos de elogio/crítica do termômetro são extraídos das avaliações do
+próprio produto (não do `top_terms.json` global do treino). O cabeçalho da
+seção de avaliações não repete a nota do termômetro: mostra o resumo em
+prosa (`buildReviewSummary`, em `src/lib/reviews.ts`) — "De 3 avaliações, 2
+positivas e 1 negativa. O que mais elogiam: ... O que mais reclamam: ..." —
+determinístico, sem LLM, só com os dados do produto.
+
 ## Organização do código (clean code)
 
 - `src/lib/api.ts` é o único lugar que fala HTTP; páginas e componentes

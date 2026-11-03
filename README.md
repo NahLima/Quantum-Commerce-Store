@@ -16,10 +16,16 @@ o cliente elogia, o que ele reclama, e onde a operação deve agir primeiro.
 
 Na loja, isso aparece como no Mercado Livre: cada produto mostra a
 distribuição de sentimento (% positivas / neutras / negativas), a média de
-estrelas, os termos mais citados de elogio e de crítica, e o cliente pode
-escrever uma avaliação e ver a classificação ao vivo. No painel de operações
-(`/ops`), a Quantum vê por categoria quais produtos concentram sentimento
-negativo.
+estrelas, os termos mais citados de elogio e de crítica **das avaliações
+daquele produto** (não do dataset inteiro), um resumo em prosa das
+avaliações ("De 3 avaliações, 2 positivas e 1 negativa. O que mais elogiam:
+... O que mais reclamam: ..." — determinístico, sem LLM), e o cliente pode
+escrever uma avaliação e ver a classificação ao vivo. Termômetro e lista de
+avaliações vêm da API juntos e só trocam para os dados reais quando os dois
+respondem — antes, o termômetro vinha da API e a lista ficava no arquivo
+local, e a página mostrava contagens diferentes (produto 2, 03/nov/2026).
+No painel de operações (`/ops`), a Quantum vê por categoria quais produtos
+concentram sentimento negativo.
 
 ## Decisão de dados: Olist real + demo na Quantum
 

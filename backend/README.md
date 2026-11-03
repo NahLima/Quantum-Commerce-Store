@@ -14,7 +14,7 @@ backend/
     main.py             # ROTAS finas: só recebem o serviço e delegam
     dependencies.py     # COMPOSIÇÃO RAIZ: monta repos/serviços/preditor (DI manual)
     schemas.py          # contratos Pydantic (ProductOut, ReviewIn/Out, Predict*, SentimentSummary)
-    services.py         # REGRAS: ProductService, SentimentService, ReviewService, TopTermsProvider
+    services.py         # REGRAS: ProductService, SentimentService, ReviewService, ProductTopTerms
     repositories.py     # DADOS: ProductRepository, ReviewRepository, PredictionRepository
     models.py           # Product, Review, Prediction (SQLAlchemy)
     database.py         # engine/sessão; Postgres por padrão, SQLite com USE_SQLITE=1
@@ -171,7 +171,7 @@ para camadas com classes e interfaces, **sem mudar o contrato da API**
 
 | Princípio | Onde |
 |---|---|
-| **S — Responsabilidade única** | `ProductRepository` só acessa dados; `ReviewService` só orquestra review+predição; `ModelTrainer` só treina; `MetricsReporter` só persiste/imprime métricas; `TopTermsProvider` só lê `top_terms.json`; cada seeder (`ProductSeeder`, `ReviewSeeder`) só popula uma tabela |
+| **S — Responsabilidade única** | `ProductRepository` só acessa dados; `ReviewService` só orquestra review+predição; `ModelTrainer` só treina; `MetricsReporter` só persiste/imprime métricas; `ProductTopTerms` só extrai termos das reviews do produto; cada seeder (`ProductSeeder`, `ReviewSeeder`) só popula uma tabela |
 | **O — Aberto/fechado** | Novo modelo = nova classe implementando `SentimentPredictor` (`ml/interfaces.py`); nova fonte = nova classe implementando `ReviewDataSource`. Serviços e treino não mudam |
 | **L — Substituição de Liskov** | `LexiconFallbackPredictor` e `TfidfLogRegPredictor` são intercambiáveis onde se espera `SentimentPredictor` (o `CompositePredictor` explora isso); `OlistReviewSource` / `CsvReviewSource` / `SyntheticReviewSource` são intercambiáveis onde se espera `ReviewDataSource` |
 | **I — Segregação de interfaces** | `SentimentPredictor`: só `predict` / `is_available` / `name`. `ReviewDataSource`: só `load` / `name`. Nenhuma classe implementa o que não usa |

@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { categoryImages, formatPrice, getProduct, products } from '../../../lib/products';
 import {
+  buildReviewSummary,
   computeSentimentStats,
   getLocalReviews,
   type Review,
@@ -14,6 +15,7 @@ import {
 } from '../../../lib/reviews';
 import {
   fetchProduct,
+  fetchProductReviews,
   fetchProductSentiment,
   predictSentiment,
   submitReview,
@@ -119,20 +121,26 @@ export default function ProductPage() {
     };
   }, [id]);
 
-  // Carrega o sentimento: API primeiro, fallback local se a API estiver fora.
+  // Carrega termômetro E lista de avaliações da API. A troca é atômica:
+  // só usa os dados da API quando os dois respondem; se um falhar, fica
+  // tudo no fallback local — termômetro e lista nunca divergem (antes, o
+  // termômetro vinha da API e a lista ficava no local, e a página mostrava
+  // "3 avaliações" no termômetro e 5 comentários na lista).
   useEffect(() => {
     if (!product) return;
     let cancelled = false;
-    fetchProductSentiment(product.id).then((data) => {
-      if (cancelled) return;
-      if (data) {
-        setApiOnline(true);
-        setStats(data.stats);
-        if (data.reviews) setReviews(data.reviews);
-      } else {
-        setApiOnline(false);
-      }
-    });
+    Promise.all([fetchProductSentiment(product.id), fetchProductReviews(product.id)]).then(
+      ([apiStats, apiReviews]) => {
+        if (cancelled) return;
+        if (apiStats && apiReviews) {
+          setApiOnline(true);
+          setStats(apiStats);
+          setReviews(apiReviews);
+        } else {
+          setApiOnline(false);
+        }
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -333,9 +341,7 @@ export default function ProductPage() {
           <h2>Avaliações.</h2>
           {stats && (
             <>
-              <strong>{stats.averageRating.toFixed(1)}</strong>
-              <Stars rating={stats.averageRating} />
-              <p>Baseado em {stats.total} avaliações verificadas</p>
+              <p className="reviews-summary-text">{buildReviewSummary(stats)}</p>
               {apiOnline === true && (
                 <span className="api-note">● Dados ao vivo da API (Postgres + modelo de ML)</span>
               )}

@@ -21,7 +21,7 @@ from app.services import (
     ProductService,
     ReviewService,
     SentimentService,
-    TopTermsProvider,
+    ProductTopTerms,
 )
 from ml.interfaces import SentimentPredictor
 from ml.predictors import get_default_predictor
@@ -45,8 +45,8 @@ def get_prediction_repository(
     return PredictionRepository(db)
 
 
-def get_terms_provider() -> TopTermsProvider:
-    return TopTermsProvider()
+def get_product_terms() -> ProductTopTerms:
+    return ProductTopTerms()
 
 
 def get_product_service(
@@ -58,7 +58,7 @@ def get_product_service(
 def get_sentiment_service(
     products: ProductRepository = Depends(get_product_repository),
     reviews: ReviewRepository = Depends(get_review_repository),
-    terms: TopTermsProvider = Depends(get_terms_provider),
+    terms: ProductTopTerms = Depends(get_product_terms),
 ) -> SentimentService:
     return SentimentService(products, reviews, terms)
 

@@ -68,3 +68,40 @@ def test_create_review_predicts_and_persists():
     assert r2.status_code == 200
     assert r2.json()["total_reviews"] >= 1
     assert r2.json()["counts"]["positive"] >= 1
+
+
+def test_product_top_terms_use_only_the_product_texts():
+    """Os termos do termômetro vêm das avaliações do produto, não do Olist inteiro."""
+    from app.models import Review
+    from app.services import ProductTopTerms
+
+    reviews = [
+        Review(product_id=1, author="A", stars=5,
+               text="Adorei o tecido aveludado, macio e confortável."),
+        Review(product_id=1, author="B", stars=5,
+               text="Qualidade impecável, tecido aveludado, recomendo!"),
+        Review(product_id=1, author="C", stars=1,
+               text="O zíper emperrou e o tecido rasgou, péssima qualidade."),
+    ]
+    terms = ProductTopTerms()
+    assert "aveludado" in terms.top_positive_terms(reviews)
+    assert "tecido" in terms.top_positive_terms(reviews)
+    assert "emperrou" in terms.top_negative_terms(reviews)
+    assert "parabéns" not in terms.top_positive_terms(reviews)
+    assert "parabéns" not in terms.top_negative_terms(reviews)
+
+
+def test_sentiment_top_terms_come_from_the_product_reviews():
+    """O endpoint de sentimento só cita palavras que as reviews do produto contêm,
+    e o total do termômetro é igual à quantidade de reviews listadas."""
+    r = client.get("/products/1/reviews?limit=100")
+    assert r.status_code == 200
+    listed = r.json()
+    texts = " ".join(item["text"].lower() for item in listed)
+    r2 = client.get("/products/1/sentiment")
+    assert r2.status_code == 200
+    body = r2.json()
+    assert body["total_reviews"] == len(listed)
+    for term in body["top_positive_terms"] + body["top_negative_terms"]:
+        assert term in texts, f"termo {term!r} não aparece em nenhuma avaliação do produto"
+    assert "parabéns" not in body["top_positive_terms"]

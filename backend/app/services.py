@@ -13,9 +13,8 @@ o modelo ou o banco não muda nenhuma regra aqui.
 
 from __future__ import annotations
 
-import json
+import re
 from collections import Counter
-from pathlib import Path
 
 from app.models import Prediction, Product, Review
 from app.repositories import (
@@ -26,7 +25,8 @@ from app.repositories import (
 )
 from app.schemas import PredictOut, ReviewIn, ReviewOut, SentimentSummary
 from ml.interfaces import SentimentPredictor
-from ml.labels import LABELS, MODEL_DIR, label_from_stars
+from ml.labels import LABELS, label_from_stars
+from ml.stopwords import PT_STOPWORDS
 
 MAX_TOP_TERMS = 10
 PRODUCT_NOT_FOUND = "Produto não encontrado"
@@ -74,34 +74,53 @@ class ProductService:
         return product
 
 
-class TopTermsProvider:
-    """Lê os termos mais relevantes do LogReg (`top_terms.json`).
+def _words(text: str) -> list[str]:
+    """Palavras minúsculas com 3+ letras (acentos preservados)."""
+    return re.findall(r"[a-zà-ú]{3,}", text.lower())
 
-    Extração (mesma do comportamento anterior): termos de maior
-    coeficiente positivo da classe "positive" (o que mais indica
-    elogio) e da classe "negative" (o que mais indica crítica).
-    Arquivo ausente ou inválido -> listas vazias, sem quebrar a API.
+
+def _label_of(review: Review) -> str:
+    """Rótulo da review: predição salva, ou regra por estrelas (1-2 neg, 3 neu, 4-5 pos)."""
+    if review.prediction is not None:
+        return review.prediction.label
+    return label_from_stars(review.stars)
+
+
+class ProductTopTerms:
+    """Termos mais citados nas avaliações DESTE produto.
+
+    Conta as palavras mais frequentes nos textos das reviews positivas
+    (elogios) e negativas (reclamações) do próprio produto, ignorando
+    stopwords. Antes, os termos vinham do `top_terms.json` global do
+    treino (Olist inteiro): o termômetro mostrava palavras que nenhuma
+    avaliação do produto continha.
     """
 
-    def __init__(self, model_dir: Path | None = None) -> None:
-        self._model_dir = model_dir or MODEL_DIR
+    def __init__(self, stopwords: set[str] | None = None) -> None:
+        self._stopwords = stopwords if stopwords is not None else set(PT_STOPWORDS)
 
-    def load(self) -> dict:
-        terms_path = self._model_dir / "top_terms.json"
-        if not terms_path.exists():
-            return {}
-        try:
-            return json.loads(terms_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            return {}
+    def top_positive_terms(self, reviews: list[Review]) -> list[str]:
+        return self._top_terms(reviews, "positive")
 
-    def top_positive_terms(self) -> list[str]:
-        terms = self.load()
-        return terms.get("positive", {}).get("positive", [])[:MAX_TOP_TERMS]
+    def top_negative_terms(self, reviews: list[Review]) -> list[str]:
+        return self._top_terms(reviews, "negative")
 
-    def top_negative_terms(self) -> list[str]:
-        terms = self.load()
-        return terms.get("negative", {}).get("positive", [])[:MAX_TOP_TERMS]
+    def _top_terms(self, reviews: list[Review], label: str) -> list[str]:
+        counts: Counter = Counter()
+        for review in reviews:
+            if _label_of(review) != label:
+                continue
+            for word in _words(review.text):
+                if word not in self._stopwords:
+                    counts[word] += 1
+        # Mais frequentes primeiro; empate desempatado em ordem alfabética
+        # (resultado determinístico para o mesmo conjunto de reviews).
+        return [
+            word
+            for word, _ in sorted(counts.items(), key=lambda item: (-item[1], item[0]))[
+                :MAX_TOP_TERMS
+            ]
+        ]
 
 
 class SentimentService:
@@ -111,11 +130,11 @@ class SentimentService:
         self,
         products: ProductRepository,
         reviews: ReviewRepository,
-        terms: TopTermsProvider | None = None,
+        terms: ProductTopTerms | None = None,
     ) -> None:
         self._products = products
         self._reviews = reviews
-        self._terms = terms or TopTermsProvider()
+        self._terms = terms or ProductTopTerms()
 
     def summarize(self, product_id: int) -> SentimentSummary:
         product = self._products.get(product_id)
@@ -128,8 +147,8 @@ class SentimentService:
             avg_stars=self._average_stars(reviews),
             counts=dict(self._count_labels(reviews)),
             percentages=self._percentages(reviews),
-            top_positive_terms=self._terms.top_positive_terms(),
-            top_negative_terms=self._terms.top_negative_terms(),
+            top_positive_terms=self._terms.top_positive_terms(reviews),
+            top_negative_terms=self._terms.top_negative_terms(reviews),
         )
 
     @staticmethod
@@ -142,10 +161,7 @@ class SentimentService:
     def _count_labels(reviews: list[Review]) -> Counter:
         counts: Counter = Counter({label: 0 for label in LABELS})
         for review in reviews:
-            if review.prediction is not None:
-                counts[review.prediction.label] += 1
-            else:  # sem predição salva: deriva das estrelas (regra do trabalho)
-                counts[label_from_stars(review.stars)] += 1
+            counts[_label_of(review)] += 1
         return counts
 
     def _percentages(self, reviews: list[Review]) -> dict[str, float]:

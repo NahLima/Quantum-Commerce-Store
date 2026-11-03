@@ -90,11 +90,6 @@ export type Prediction = {
   model?: string;
 };
 
-export type ProductSentiment = {
-  stats: SentimentStats;
-  reviews?: Review[];
-};
-
 function normalizeLabel(raw: unknown): SentimentLabel | null {
   if (typeof raw !== 'string') return null;
   const v = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -258,18 +253,30 @@ function toStats(raw: Record<string, unknown>, reviews: Review[]): SentimentStat
   };
 }
 
-/** Termômetro de sentimento de um produto a partir da API; null => usar fallback local. */
-export async function fetchProductSentiment(productId: number): Promise<ProductSentiment | null> {
+/** Termômetro de sentimento de um produto a partir da API; null => usar fallback local.
+ *  Atenção: o endpoint de sentimento NÃO devolve a lista de avaliações —
+ *  ela vem de `fetchProductReviews` (GET /products/{id}/reviews). A página
+ *  do produto busca os dois e só troca para os dados da API quando os dois
+ *  respondem, para o termômetro e a lista nunca divergirem. */
+export async function fetchProductSentiment(productId: number): Promise<SentimentStats | null> {
   const paths = [`/products/${productId}/sentiment`, `/sentiment?product_id=${productId}`];
   for (const path of paths) {
     const data = await fetchJson(`${API_URL}${path}`);
     if (!data || typeof data !== 'object') continue;
-    const d = data as Record<string, unknown>;
-    const rawReviews = Array.isArray(d.reviews) ? d.reviews : [];
-    const reviews = rawReviews
+    return toStats(data as Record<string, unknown>, []);
+  }
+  return null;
+}
+
+/** Lista de avaliações de um produto a partir da API; null => usar fallback local. */
+export async function fetchProductReviews(productId: number): Promise<Review[] | null> {
+  const paths = [`/products/${productId}/reviews`, `/api/products/${productId}/reviews`];
+  for (const path of paths) {
+    const data = await fetchJson(`${API_URL}${path}`);
+    if (!Array.isArray(data)) continue;
+    return data
       .map((r, i) => toReview(r, productId, i))
       .filter((r): r is Review => r !== null);
-    return { stats: toStats(d, reviews), reviews: reviews.length ? reviews : undefined };
   }
   return null;
 }
