@@ -99,6 +99,7 @@ em { color: var(--blue); font-family: Georgia, serif; font-weight: 400; }
 .product-info > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .product-info b { font-size: 12px; }
 .stars { color: #3156ff; font-size: 10px; letter-spacing: 1px; white-space: nowrap; }
+.stars .empty { color: #d5d5d0; }
 .stars small { color: #777; font-size: 9px; letter-spacing: 0; margin-left: 4px; }
 .load-more { display: flex; justify-content: space-between; width: 195px; margin: 55px auto 0; border: 0; border-bottom: 1px solid #aaa; padding: 12px 0; background: none; font-size: 9px; font-weight: 700; letter-spacing: .12em; }
 .load-more span { color: #999; }
