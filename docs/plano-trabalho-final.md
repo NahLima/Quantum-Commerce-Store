@@ -4,7 +4,7 @@
 **Tema escolhido:** análise de sentimento em reviews, com referência ao Mercado Livre.
 **Entrega:** 22/nov/2026 · **Prof.:** Ahirton Lopes (profahirton.lopes@fiap.com.br)
 **Repositório:** https://github.com/NahLima/Quantum-Commerce-Store
-**Decisão de dataset (31/out/2026):** treinar no Olist real + demonstrar na loja Quantum.
+**Decisão de dataset (31/out/2026, atualizada 04/nov/2026):** treinar no Olist real + B2W (treino oficial desde 04/nov/2026) + demonstrar na loja Quantum. A escolha entre Olist, Olist+EDA e Olist+B2W foi medida no Colab em 3 versões (ver §3.4).
 
 Este documento é o plano escrito do trabalho. A aplicação funcionando
 (frontend + backend + banco) está neste mesmo repositório e é a demonstração
@@ -157,10 +157,11 @@ scikit-learn — TF-IDF + LogReg / MLP (ml/artifacts/)
 
 | Fonte | O que é | Uso |
 |---|---|---|
-| **Olist** — Brazilian E-Commerce Public Dataset (Kaggle) | ~100 mil avaliações reais em PT-BR (2016–2018), com `review_score` 1–5 e texto livre (`review_comment_message`, `review_comment_title`) | Treino e avaliação do modelo. Rótulo por estrelas. Não está no repo (licença Kaggle, ignorado no `.gitignore`); arquivo original na pasta `archive` do Drive, salvo como `backend/data/olist_order_reviews_dataset.csv`, treino com `python -m ml.train --olist` (31/out/2026: 42.687 linhas úteis, F1-macro LogReg 0,635 — ver 3.4). |
+| **Olist** — Brazilian E-Commerce Public Dataset (Kaggle) | ~100 mil avaliações reais em PT-BR (2016–2018), com `review_score` 1–5 e texto livre (`review_comment_message`, `review_comment_title`) | Treino e avaliação do modelo. Rótulo por estrelas. Não está no repo (licença Kaggle, ignorado no `.gitignore`); arquivo original na pasta `archive` do Drive, salvo como `backend/data/olist_order_reviews_dataset.csv` (31/out/2026: 42.687 linhas úteis — ver 3.4). |
+| **B2W-Reviews01** — Americanas.com (2018), no dataset unificado PT-BR do Kaggle | 132.373 avaliações reais em PT-BR com `rating` 1–5 e texto livre (`review_text`) | Treino oficial junto com o Olist desde 04/nov/2026. Soma 16.315 neutras (4,5× as do Olist) e 35.758 negativas. Não está no repo (CC BY-NC-SA, ignorado no `.gitignore`); arquivo na pasta `archive-v2` do Drive, salvo como `backend/data/b2w_reviews.csv`, treino com `python -m ml.train --olist --b2w` (ver 3.4). |
 | **Catálogo Quantum (Figma)** | 50 produtos, 5 categorias, nomes, preços, cores, imagens | Demonstração na loja. Extraído do `App.tsx` do Figma sem inventar nada. |
 | **Reviews de demonstração** | 234 avaliações sintéticas em PT-BR, 3–6 por produto, estrelas coerentes com o texto, marcadas como `source=seed` | Termômetro e painel funcionarem na demo. Não são evidência de desempenho — são só o palco. |
-| **Golden set manual (a fazer)** | Amostra de avaliações dos produtos Quantum revisada manualmente | Validar a transferência Olist → Quantum (mudança de domínio) antes de afirmar que o modelo funciona na loja. |
+| **Golden set manual** | 24 avaliações dos produtos Quantum revisadas manualmente, rótulos aprovados pela Naiara (01/nov/2026) | Validar a transferência Olist+B2W → Quantum (mudança de domínio). LogReg oficial: 20/24 = 0,833 (ver 3.4). |
 
 Pré-processamento: minúsculas, remoção de stopwords PT-BR, TF-IDF
 1–2 gramas. Sem lematização nesta fase (documentado como melhoria
@@ -168,7 +169,8 @@ futura de baixo custo).
 
 ### 3.3 Pipeline de treinamento
 
-1. Carregar a fonte (`OlistReviewSource`, `CsvReviewSource` ou
+1. Carregar a fonte (`OlistReviewSource` + `B2WReviewSource`
+   combinadas por `CombinedReviewSource`, ou `CsvReviewSource` ou
    `SyntheticReviewSource` — todas implementam `ReviewDataSource`).
 2. Rotular por estrelas e limpar textos vazios.
 3. Split estratificado 80/20 + validação cruzada.
@@ -180,7 +182,8 @@ futura de baixo custo).
    artefato — a API nunca quebra por falta de modelo).
 
 Comando: `cd backend && python -m ml.train` (sintético) ou
-`python -m ml.train --olist` (Olist, quando o CSV estiver presente).
+`python -m ml.train --olist` (só Olist, versão 1) ou
+`python -m ml.train --olist --b2w` (oficial: Olist + B2W).
 
 ### 3.4 Métricas de avaliação
 
@@ -188,7 +191,9 @@ Métrica principal: **F1-macro** (as classes são desbalanceadas e a
 negativa, minoritária, é a mais importante para a operação).
 Apoio: acurácia, precisão e recall por classe, matriz de confusão.
 
-Resultados medidos em 31/out/2026, no **Olist real**
+#### Versão 1 — só Olist (31/out/2026)
+
+Resultados medidos no **Olist real**
 (`olist_order_reviews_dataset.csv`, pasta `archive` do Drive;
 99.224 linhas, das quais 42.687 com título ou mensagem — 56.537
 sem texto foram descartadas; treino 34.149 / teste 8.538):
@@ -212,6 +217,53 @@ negativa, neutra, positiva): [[1704, 378, 117], [292, 258, 179],
 e `top_terms.json` (ex.: termos positivos "parabéns, amei, rápido,
 embalado"; negativos "péssima, ruim, quebrado, demora").
 
+#### As 3 versões do treino — a escolha medida (04/nov/2026)
+
+O Olist sozinho não tinha neutras e negativas suficientes, então
+três versões foram comparadas no Colab (notebook
+`treino-sentimento-quantum-commerce-v3.ipynb` no Drive), todas com
+o mesmo TF-IDF + LogReg e avaliadas **no mesmo teste do Olist**
+(8.538 itens) e no golden set (24 itens, domínio Quantum):
+
+| Versão | Treino | F1-macro (teste Olist) | Acurácia | Golden set |
+|---|---|---|---|---|
+| v1 | Olist (34.149) | 0,635 | 0,780 | 13/24 = 0,542 |
+| v2 | Olist + EDA (45.858) | 0,631 | 0,771 | — |
+| **v3** | **Olist + B2W (140.047)** | **0,637** | 0,757 | **19/24 = 0,792** |
+
+A v2 (EDA — 1 variante por review neutra/negativa do treino,
+troca de posição + remoção de palavra) não ajudou: o TF-IDF é
+bag-of-words e trocar a ordem das palavras quase não muda o
+vetor. A v3 ganhou nas minoritárias: F1 da negativa 0,761 →
+0,788 e recall da neutra 0,354 → 0,433 (F1 0,259 → 0,266), ao
+custo de acurácia geral. Um quarto braço, Olist+B2W+Buscapé
+(208.039 linhas), foi testado e descartado: F1-macro 0,632 e
+golden 17/24 — pior que a v3 nos dois. O SMOTE, testado antes
+como braço de comparação, também não resolveu a neutra
+(F1-macro 0,639 em 2.000 features, neutra pior). Veredito: **v3
+é o treino oficial**.
+
+#### Treino oficial — Olist + B2W (04/nov/2026)
+
+`python -m ml.train --olist --b2w`: o treino faz um único split
+80/20 sobre os dados combinados (175.060 linhas com texto;
+neutra agora 11,4% do treino, contra 8,5% só no Olist). O teste
+aqui é 20% dos dados combinados — por isso os números diferem
+da comparação entre versões, cujo teste é só Olist:
+
+| Modelo | Acurácia | F1-macro |
+|---|---|---|
+| Baseline majoritário | 0,619 | 0,255 |
+| TF-IDF + LogReg | 0,743 | **0,662** |
+| TF-IDF + MLP | 0,751 | 0,604 |
+
+F1 por classe (LogReg): positiva 0,831, negativa 0,812, neutra
+0,344 — a neutra continua sendo o gargalo, mas subiu de 0,259
+para 0,344 com o B2W. Matriz de confusão da LogReg (linhas =
+verdade: negativa, neutra, positiva): [[7621, 1470, 259],
+[871, 2046, 1075], [928, 4399, 16343]]. Artefatos em
+`backend/ml/artifacts/metrics.json` e `top_terms.json`.
+
 #### Golden set Quantum — validação na loja (01/nov/2026)
 
 O golden set manual resolve a limitação de domínio (§4.1): 24
@@ -225,18 +277,28 @@ avaliação reproduzível por `python eval/eval_golden_set.py`
 (`--model-dir` aponta os artefatos; os `*.joblib` não são
 versionados).
 
-Resultado do LogReg treinado no Olist, sem re-treino: **13/24 =
-0,542** (positiva 6/8, negativa 5/8, neutra 2/8), contra 0,780 de
-acurácia no teste do Olist. A transferência perde, e a classe neutra
-é o gargalo: 5 dos 6 erros de neutra viraram positiva — inclusive
-dois neutros claros, G19 ("cumpre o que promete, sem encantar") →
-positiva 0,904 e G24 → positiva 0,861 — então o padrão não depende
-dos três rótulos discutíveis. Coerente com o desbalanceamento do
-treino: 65,7% das 42.687 linhas do Olist com texto são positivas.
-Os outros erros: vocabulário de domínio não visto no Olist (G03
-sérum/pele hidratada → negativa 0,730; G15 "vaza mesmo fechada" →
-positiva 0,481) e negativas com defeito virando neutras (G10, G12).
-Os dois neutros curtíssimos acertaram (G17, G18).
+Resultado do LogReg treinado no Olist+B2W (oficial), sem
+re-treino: **20/24 = 0,833** (positiva 7/8, negativa 8/8,
+neutra 5/8), contra 0,743 de acurácia no teste misto. Os 4
+erros: G05 (positiva → neutra, conf. 0,480), G18 (neutra →
+negativa, conf. 0,980 — "produto regular, nada demais", que a
+v1 acertava), G19 (neutra → positiva, 0,769) e G23 (neutra →
+positiva, 0,427). A neutra segue como gargalo (5/8), mas
+melhorou muito: G20, G21, G22 e G24 passaram a acertar com o
+B2W. Para referência, o mesmo modelo treinado só no Olist
+(v1) fazia **13/24 = 0,542** (positiva 6/8, negativa 5/8,
+neutra 2/8), contra 0,780 de acurácia no teste do Olist — 5
+dos 6 erros de neutra viraram positiva, inclusive dois
+neutros claros, G19 ("cumpre o que promete, sem encantar") →
+positiva 0,904 e G24 → positiva 0,861 — então o padrão não
+dependia dos três rótulos discutíveis. Coerente com o
+desbalanceamento do treino v1: 65,7% das 42.687 linhas do
+Olist com texto são positivas. Os outros erros da v1:
+vocabulário de domínio não visto no Olist (G03 sérum/pele
+hidratada → negativa 0,730; G15 "vaza mesmo fechada" →
+positiva 0,481) e negativas com defeito virando neutras
+(G10, G12) — G03 e G15 acertam na v3, G10 e G12 já
+acertavam na v1 e continuam certas.
 
 Só o LogReg foi avaliado — o backend só expõe esse preditor; a MLP
 é só artefato de comparação de treino. Discussão que o resultado
@@ -282,12 +344,12 @@ produto quebrado; positivo 0,967 num elogio) e `POST /reviews` → 201.
 
 ### 4.1 Limitações
 
-- **Mudança de domínio.** O modelo treina no Olist (e-commerce
+- **Mudança de domínio.** O modelo treina no Olist+B2W (e-commerce
   geral) e é demonstrado na Quantum (catálogo curado específico).
   O golden set manual (01/nov/2026, 24 itens, §3.4) agora permite
-  afirmar o desempenho na loja: LogReg 13/24 = 0,542, contra 0,780
-  no teste do Olist — a transferência perde, com a neutra como
-  gargalo.
+  afirmar o desempenho na loja: LogReg oficial 20/24 = 0,833,
+  contra 0,743 no teste misto — a transferência funciona, com a
+  neutra como gargalo (5/8).
 - **Rótulo por estrelas é ruidoso.** Nem toda avaliação 5 estrelas
   é positiva no texto, nem toda 1 estrela é negativa no texto
   (ironia, "chegou rápido mas veio quebrado"). O teto de qualidade
@@ -359,10 +421,12 @@ segue sendo o classificador TF-IDF + LogReg/MLP.
    digitar um elogio e mostrar positivo.
 4. **Painel `/ops`:** categoria com mais negativas, top produtos,
    alerta > 25%, e a decisão que a operação tomaria.
-5. **Treino e métricas:** mostrar `python -m ml.train --olist`, a
-   tabela baseline × LogReg × MLP no Olist real (F1-macro 0,635) e
-   a matriz de confusão — com a discussão da classe neutra como
-   gargalo e do F1 = 1,0 no sintético como artefato.
+5. **Treino e métricas:** mostrar `python -m ml.train --olist --b2w`,
+   a tabela das 3 versões do treino (v1 Olist, v2 Olist+EDA, v3
+   Olist+B2W) e a tabela baseline × LogReg × MLP do treino oficial
+   (F1-macro 0,662) com o golden set 20/24 — com a discussão da
+   classe neutra como gargalo e do F1 = 1,0 no sintético como
+   artefato.
 6. **Código:** mostrar `ml/interfaces.py` (o contrato),
    `app/services.py` (a regra) e a tabela SOLID no README.
 
@@ -373,6 +437,7 @@ segue sendo o classificador TF-IDF + LogReg/MLP.
 | 31/out | Scaffold completo, build e testes passando, push no git (bundle → Mac) |
 | 31/out | Olist verificado na pasta `archive` do Drive, loader corrigido para as colunas reais, treino com `--olist` e métricas reais registradas (F1-macro LogReg 0,635) |
 | Semana 1 (nov) | Golden set manual Quantum — feito 01/nov: 24 itens, rótulos aprovados, LogReg 13/24 = 0,542 (neutra 2/8); validar Docker no Mac, ajustar limiar se preciso |
+| 04/nov | Treino oficial virou Olist+B2W: 3 versões comparadas no Colab (v1 Olist, v2 Olist+EDA, v3 Olist+B2W), Buscapé testado e descartado, golden set 20/24 = 0,833 (neutra 5/8) |
 | Semana 2 | Ampliar golden set (~40 itens, mais neutras), validar transferência, ajustar limiar se preciso |
 | Semana 3 | Slides/documento final a partir deste plano, ensaio da demo, entrega |
 
@@ -383,6 +448,10 @@ segue sendo o classificador TF-IDF + LogReg/MLP.
 - Scikit-learn Documentation — https://scikit-learn.org/stable/
 - Olist Brazilian E-Commerce Public Dataset (Kaggle) —
   https://www.kaggle.com/datasets
+- B2W-Reviews01 (Real, Oshiro & Mafra, STIL 2019) e dataset unificado
+  PT-BR de análise de sentimento (Frederico et al.) —
+  https://github.com/b2wdigital/b2w-reviews01 e
+  https://www.kaggle.com/fredericods/ptbr-sentiment-analysis-datasets
 - Repositório da disciplina (Demos 1 a 12) —
   https://github.com/ahirtonlopes/Machine-Learning-Foundations-and-Classic-Models
 - Projeto Figma (Drive) e este repositório (código, READMEs e

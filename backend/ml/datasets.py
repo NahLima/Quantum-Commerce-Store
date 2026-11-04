@@ -8,6 +8,12 @@
         título). Aceita também um arquivo já renomeado como
         `olist_reviews.csv` com colunas `review_text`/`review_score`.
         Devolve DataFrame vazio se nenhum arquivo existe.
+    B2WReviewSource: reviews reais do B2W-Reviews01 (Americanas.com,
+        2018 — arquivo `b2w_reviews.csv`, 132.373 linhas com texto,
+        formato unificado do Kaggle: `review_text` e `rating` 1–5).
+        Treino oficial desde nov/2026: Olist + B2W.
+    CombinedReviewSource: concatena várias fontes (ex.: Olist + B2W)
+        num único DataFrame — o treino não muda (Composite + OCP).
     CsvReviewSource: qualquer CSV com colunas `text` e `stars`.
     SyntheticReviewSource: reviews PT-BR geradas de templates por
         sentimento — default para o trabalho rodar sem download externo.
@@ -32,6 +38,8 @@ DATA_DIR = BASE_DIR / "data"
 # Nome original do Kaggle primeiro; aceita o nome curto como fallback.
 OLIST_FILE = DATA_DIR / "olist_order_reviews_dataset.csv"
 OLIST_FILE_SHORT = DATA_DIR / "olist_reviews.csv"
+# B2W-Reviews01 no formato unificado do Kaggle (review_text, rating).
+B2W_FILE = DATA_DIR / "b2w_reviews.csv"
 
 _COLUMNS = ["text", "stars"]
 
@@ -89,6 +97,68 @@ class OlistReviewSource(ReviewDataSource):
         df = df[df["text"] != ""].dropna(subset=["stars"])
         df["stars"] = df["stars"].astype(int).clip(1, 5)
         return _with_labels(df)
+
+
+class B2WReviewSource(ReviewDataSource):
+    """Reviews reais do B2W-Reviews01 (Americanas.com, jan–mai/2018).
+
+    Arquivo `b2w_reviews.csv` no formato unificado do Kaggle:
+    `review_text` e `rating` (1–5). Das 132.373 linhas, todas têm
+    texto (1 linha vazia é descartada). Junto com o Olist, forma o
+    treino oficial desde nov/2026: 16.315 neutras (4,5× as do Olist)
+    e 35.758 negativas — o ganho medido foi no golden set, 13/24 →
+    19/24 (ver `eval/`).
+    """
+
+    def __init__(self, path: Path | None = None) -> None:
+        self._path = path or B2W_FILE
+
+    @property
+    def name(self) -> str:
+        return "b2w"
+
+    @property
+    def path(self) -> Path:
+        return self._path
+
+    def load(self) -> pd.DataFrame:
+        if not self._path.exists():
+            return pd.DataFrame(columns=_COLUMNS + ["label"])
+        raw = pd.read_csv(self._path, usecols=["review_text", "rating"])
+        df = pd.DataFrame(
+            {
+                "text": raw["review_text"].fillna("").astype(str).str.strip(),
+                "stars": raw["rating"],
+            }
+        )
+        df = df[df["text"] != ""].dropna(subset=["stars"])
+        df["stars"] = df["stars"].astype(int).clip(1, 5)
+        return _with_labels(df)
+
+
+class CombinedReviewSource(ReviewDataSource):
+    """Concatena várias fontes num único DataFrame (Composite).
+
+    O treino recebe uma única fonte e não muda: o split 80/20 é
+    feito sobre a concatenação. O nome é a junção das fontes
+    (ex.: `olist+b2w`) e vai para `metrics.json` como `source`.
+    """
+
+    def __init__(self, sources: list[ReviewDataSource]) -> None:
+        if not sources:
+            raise ValueError("CombinedReviewSource precisa de ao menos uma fonte.")
+        self._sources = list(sources)
+
+    @property
+    def name(self) -> str:
+        return "+".join(source.name for source in self._sources)
+
+    def load(self) -> pd.DataFrame:
+        frames = [source.load() for source in self._sources]
+        frames = [frame for frame in frames if not frame.empty]
+        if not frames:
+            return pd.DataFrame(columns=_COLUMNS + ["label"])
+        return pd.concat(frames, ignore_index=True)
 
 
 class CsvReviewSource(ReviewDataSource):

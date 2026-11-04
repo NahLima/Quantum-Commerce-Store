@@ -8,4 +8,11 @@ ml/artifacts/*.joblib
 # Dataset Olist original (14 MB, licença Kaggle) — não versionar.
 # Fica em data/olist_order_reviews_dataset.csv (pasta archive do Drive).
 data/olist_*.csv
+# Dataset B2W-Reviews01 (67 MB, CC BY-NC-SA) — não versionar.
+# Fica em data/b2w_reviews.csv (pasta archive-v2 do Drive).
+data/b2w_*.csv
+# Dataset Buscapé (78 MB, formato unificado) — não versionar.
+# Testado em nov/2026 e descartado (não ajudou); fica em
+# data/buscape_reviews.csv (pasta archive-v2 do Drive).
+data/buscape_*.csv
 .DS_Store

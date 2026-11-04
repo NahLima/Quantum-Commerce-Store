@@ -23,7 +23,8 @@ backend/
     labels.py           # rótulos, MODEL_NAME/VERSION, label_from_stars (fonte única)
     predictors.py       # TfidfLogRegPredictor, CompositePredictor, get_default_predictor
     lexicon.py          # LexiconFallbackPredictor (fallback por léxico PT-BR)
-    datasets.py         # OlistReviewSource, CsvReviewSource, SyntheticReviewSource
+    datasets.py         # OlistReviewSource, B2WReviewSource, CombinedReviewSource,
+                        # CsvReviewSource, SyntheticReviewSource
     training.py         # ModelTrainer, MetricsReporter, build_vectorizer
     train.py            # CLI fina de treino (monta a DI e chama o trainer)
     sentiment.py        # fachada predict() — compatibilidade com código antigo
@@ -33,7 +34,8 @@ backend/
   data/
     products.json       # 50 produtos extraídos do Figma (App.tsx)
     seed_reviews.csv    # gerado pelo seed (text, stars, product_id)
-    olist_order_reviews_dataset.csv   # OPCIONAL: CSV do Olist (não versionado, ver "Treino com Olist")
+    olist_order_reviews_dataset.csv   # OPCIONAL: CSV do Olist (não versionado, ver "Treino com Olist + B2W")
+    b2w_reviews.csv                   # OPCIONAL: CSV do B2W-Reviews01 (não versionado, idem)
   seed.py               # ProductSeeder + ReviewSeeder + DatabaseSeeder
   tests/                # pytest (8 testes)
 ```
@@ -63,7 +65,8 @@ python seed.py                          # 50 produtos + 234 reviews
 
 # 3. treinar o modelo (gera ml/artifacts/)
 python -m ml.train                     # sintético (~922 reviews)
-python -m ml.train --olist             # com o Olist (ver abaixo)
+python -m ml.train --olist             # só Olist (versão 1 do treino)
+python -m ml.train --olist --b2w       # OFICIAL: Olist + B2W (ver abaixo)
 
 # 4. rodar a API fora do Docker (opcional; o compose já sobe a API)
 uvicorn app.main:app --reload --port 8000
@@ -123,7 +126,7 @@ Mercado Livre (`{product_id, summary, source, model, review_count, cached}`).
 - **Fallback:** se não houver artefato treinado, `/predict` usa o léxico
   PT-BR (`ml/lexicon.py`, com negação) — a API nunca quebra.
 
-### Treino com Olist
+### Treino com Olist + B2W (oficial, desde nov/2026)
 
 ```bash
 # 1. baixe olist_order_reviews_dataset.csv do Kaggle
@@ -131,44 +134,65 @@ Mercado Livre (`{product_id, summary, source, model, review_count, cached}`).
 #    na pasta `archive` do Drive da Quantum)
 # 2. salve como backend/data/olist_order_reviews_dataset.csv
 #    (o arquivo NÃO é versionado: está no .gitignore)
-# 3. treine:
-python -m ml.train --olist
+# 3. baixe b2w.csv do dataset unificado PT-BR do Kaggle
+#    (fredericods/ptbr-sentiment-analysis-datasets — o arquivo
+#    também está na pasta `archive-v2` do Drive da Quantum)
+# 4. salve como backend/data/b2w_reviews.csv (idem, não versionado)
+# 5. treine:
+python -m ml.train --olist --b2w
 ```
 
 O `OlistReviewSource` lê as colunas reais `review_comment_message`,
 `review_comment_title` e `review_score` (texto = título + mensagem;
 o título salva 1.737 linhas sem mensagem). Das 99.224 linhas, 42.687
-têm texto. Sem o arquivo, `--olist` avisa e usa o sintético.
+têm texto. O `B2WReviewSource` lê `review_text` e `rating` (1–5) do
+B2W-Reviews01 (Americanas.com, 2018): 132.373 linhas com texto.
+O `CombinedReviewSource` concatena as duas fontes; o treino faz um
+único split 80/20 sobre a concatenação. Sem os arquivos, as flags
+avisam e o treino usa o sintético.
+
+Por que Olist + B2W: o Olist sozinho tem só 3.643 neutras (8,5% do
+treino) e a neutra era o gargalo. O B2W soma 16.315 neutras e 35.758
+negativas reais, do mesmo domínio (e-commerce PT-BR). A escolha foi
+medida no Colab em 3 versões — v1 Olist, v2 Olist+EDA, v3 Olist+B2W
+(ver o notebook `treino-sentimento-quantum-commerce-v3.ipynb` no
+Drive) — e o Buscapé foi testado e descartado (piorou os dois
+testes). Resumo da comparação, no mesmo teste do Olist: v1 F1-macro
+0,635 e golden 13/24; v2 (EDA) 0,631; v3 (Olist+B2W) 0,637 e golden
+19/24; Olist+B2W+Buscapé 0,632 e golden 17/24.
 
 ### Métricas
 
 Último treino registrado: ver `ml/artifacts/metrics.json` — treino
-real no Olist, 31/out/2026 (34.149 treino / 8.538 teste):
+oficial Olist+B2W, 04/nov/2026 (140.048 treino / 35.012 teste; o
+teste aqui é 20% dos dados combinados, por isso difere do teste
+só-Olist da comparação entre versões):
 
 | modelo | accuracy | F1-macro |
 |---|---|---|
-| baseline maioria | 0,657 | 0,264 |
-| **LogReg (principal)** | **0,780** | **0,635** |
-| MLP (comparação) | 0,787 | 0,600 |
+| baseline maioria | 0,619 | 0,255 |
+| **LogReg (principal)** | **0,743** | **0,662** |
+| MLP (comparação) | 0,751 | 0,604 |
 
-F1 por classe (LogReg): positiva 0,886, negativa 0,761, neutra 0,259
-— a classe neutra (só 8,5% do treino) é o gargalo. A MLP ganha em
-acurácia e perde em F1-macro; ela treina numa subamostra estratificada
-de 12.000 linhas porque densifica o TF-IDF (`mlp_n_train` no
-`metrics.json`), e o teste é o mesmo para os três modelos.
+F1 por classe (LogReg): positiva 0,831, negativa 0,812, neutra 0,344
+— a neutra continua sendo o gargalo, mas subiu de 0,259 (só Olist)
+para 0,344 com o B2W. A MLP ganha em acurácia e perde em F1-macro;
+ela treina numa subamostra estratificada de 12.000 linhas porque
+densifica o TF-IDF (`mlp_n_train` no `metrics.json`), e o teste é
+o mesmo para os três modelos.
 
 ### Golden set Quantum (transferência para a loja)
 
 Avaliação manual na loja, 01/nov/2026 — 24 avaliações novas em PT-BR
 (8 por classe, produtos reais do Figma), rótulos aprovados pela
 Naiara (G20, G21 e G23 mantidos neutros, por decisão dela). LogReg
-treinado no Olist, sem re-treino (`eval/golden_set.csv`,
-`eval/eval_golden_set.py`): **13/24 = 0,542** (positiva 6/8,
-negativa 5/8, neutra 2/8), contra 0,780 de acurácia no teste do
-Olist. A neutra é o gargalo — 5 dos 6 erros de neutra viraram
-positiva (G19 → 0,904; G24 → 0,861). Os artefatos `*.joblib` não
-são versionados; o script falha com mensagem clara sem eles
-(`--model-dir` aponta os artefatos).
+treinado no Olist+B2W, sem re-treino (`eval/golden_set.csv`,
+`eval/eval_golden_set.py`): **20/24 = 0,833** (positiva 7/8,
+negativa 8/8, neutra 5/8), contra 0,743 de acurácia no teste
+misto. Para referência, o mesmo modelo treinado só no Olist fazia
+13/24 = 0,542 (positiva 6/8, negativa 5/8, neutra 2/8). Os
+artefatos `*.joblib` não são versionados; o script falha com
+mensagem clara sem eles (`--model-dir` aponta os artefatos).
 
 > **Aviso honesto:** o treino sintético de demonstração (922 linhas)
 > dá F1 = 1,0 nos dois modelos — artefato dos templates que se
@@ -206,7 +230,7 @@ para camadas com classes e interfaces, **sem mudar o contrato da API**
 |---|---|
 | **S — Responsabilidade única** | `ProductRepository` só acessa dados; `ReviewService` só orquestra review+predição; `ModelTrainer` só treina; `MetricsReporter` só persiste/imprime métricas; `ProductTopTerms` só extrai termos das reviews do produto; cada seeder (`ProductSeeder`, `ReviewSeeder`) só popula uma tabela |
 | **O — Aberto/fechado** | Novo modelo = nova classe implementando `SentimentPredictor` (`ml/interfaces.py`); nova fonte = nova classe implementando `ReviewDataSource`. Serviços e treino não mudam |
-| **L — Substituição de Liskov** | `LexiconFallbackPredictor` e `TfidfLogRegPredictor` são intercambiáveis onde se espera `SentimentPredictor` (o `CompositePredictor` explora isso); `OlistReviewSource` / `CsvReviewSource` / `SyntheticReviewSource` são intercambiáveis onde se espera `ReviewDataSource` |
+| **L — Substituição de Liskov** | `LexiconFallbackPredictor` e `TfidfLogRegPredictor` são intercambiáveis onde se espera `SentimentPredictor` (o `CompositePredictor` explora isso); `OlistReviewSource` / `B2WReviewSource` / `CombinedReviewSource` / `CsvReviewSource` / `SyntheticReviewSource` são intercambiáveis onde se espera `ReviewDataSource` |
 | **I — Segregação de interfaces** | `SentimentPredictor`: só `predict` / `is_available` / `name`. `ReviewDataSource`: só `load` / `name`. Nenhuma classe implementa o que não usa |
 | **D — Inversão de dependência** | `ReviewService` recebe um `SentimentPredictor` (abstração), não o LogReg; `ModelTrainer` recebe um `ReviewDataSource`. Os concretos são montados num só lugar: `app/dependencies.py` (API) e a CLI de `ml/train.py` (treino) |
 
@@ -247,7 +271,8 @@ nomeadas em vez de números mágicos (`LOGREG_C`, `TFIDF_MAX_FEATURES`,
 - **Docker / Postgres não testados nesta VM** (não há Docker aqui). A
   validação real precisa acontecer no Mac (`docker compose up` + seed).
   Testes, treino e smoke test rodaram com SQLite (`USE_SQLITE=1`).
-- **Olist não incluído no repo** (dataset externo do Kaggle). Sem ele, o
-  treino usa o sintético e as métricas não são generalizáveis.
+- **Olist e B2W não incluídos no repo** (datasets externos do Kaggle).
+  Sem eles, o treino usa o sintético e as métricas não são
+  generalizáveis.
 - **Não versionar:** `.venv/`, `app.db`, `*.joblib`, `.env`
   (ver `.gitignore`). Versionáveis: `metrics.json` e `top_terms.json`.

@@ -27,18 +27,21 @@ local, e a página mostrava contagens diferentes (produto 2, 03/nov/2026).
 No painel de operações (`/ops`), a Quantum vê por categoria quais produtos
 concentram sentimento negativo.
 
-## Decisão de dados: Olist real + demo na Quantum
+## Decisão de dados: Olist + B2W real + demo na Quantum
 
 | | |
 |---|---|
-| **Treino** | **Olist real** — Brazilian E-Commerce Public Dataset (Kaggle, ~100 mil reviews PT-BR, 2016–2018). Rótulo derivado das estrelas: 1–2 negativo, 3 neutro, 4–5 positivo. |
+| **Treino** | **Olist + B2W reais** — Brazilian E-Commerce Public Dataset (Kaggle, ~100 mil reviews PT-BR, 2016–2018) + B2W-Reviews01 (Americanas.com, 2018, 132 mil reviews). Rótulo derivado das estrelas: 1–2 negativo, 3 neutro, 4–5 positivo. |
 | **Demo** | **Loja Quantum** — os 50 produtos do projeto Figma (5 categorias) + avaliações de demonstração em PT-BR + predição ao vivo de texto digitado. |
 
 Por que assim: treinar só com dado sintético faria o modelo aprender apenas
 os padrões que inventamos; treinar no Olist dá português real (gíria, erro de
-digitação, ironia) e métricas honestas; a demo na Quantum mostra o modelo
-funcionando no contexto da empresa. O dataset do Olist **não está no repo**
-(baixar do Kaggle — ver "Treino"). Sem ele, o treino usa um dataset sintético
+digitação, ironia) e métricas honestas; o B2W entrou em nov/2026 porque o
+Olist sozinho tinha poucas neutras e negativas — a escolha foi medida no
+Colab em 3 versões (v1 Olist, v2 Olist+EDA, v3 Olist+B2W) e a v3 ganhou no
+golden set (19/24, contra 13/24 da v1). A demo na Quantum mostra o modelo
+funcionando no contexto da empresa. Os datasets **não estão no repo**
+(baixar do Kaggle — ver "Treino"). Sem eles, o treino usa um dataset sintético
 de demonstração (~922 reviews) para o pipeline rodar end-to-end.
 
 ## Arquitetura
@@ -98,7 +101,7 @@ quantum-commerce-store/
     │   ├── labels.py       # rótulos, nomes e versão do modelo
     │   ├── predictors.py   # TfidfLogRegPredictor, CompositePredictor
     │   ├── lexicon.py      # fallback por léxico PT-BR
-    │   ├── datasets.py     # OlistReviewSource, Csv, Synthetic
+    │   ├── datasets.py     # OlistReviewSource, B2WReviewSource, Combined, Csv, Synthetic
     │   ├── training.py     # ModelTrainer, MetricsReporter
     │   ├── train.py        # CLI fina de treino
     │   ├── sentiment.py    # fachada predict() (compatibilidade)
@@ -107,7 +110,8 @@ quantum-commerce-store/
     ├── data/
     │   ├── products.json       # 50 produtos extraídos do Figma
     │   ├── seed_reviews.csv    # gerado pelo seed
-    │   └── olist_order_reviews_dataset.csv   # OPCIONAL: CSV do Olist (não versionado)
+    │   ├── olist_order_reviews_dataset.csv   # OPCIONAL: CSV do Olist (não versionado)
+    │   └── b2w_reviews.csv                   # OPCIONAL: CSV do B2W (não versionado)
     ├── seed.py             # ProductSeeder + ReviewSeeder
     └── tests/              # pytest (25 testes)
 ```
@@ -129,11 +133,13 @@ python seed.py                          # 50 produtos + 234 reviews
 
 # 3. Treinar o modelo (gera ml/artifacts/)
 python -m ml.train                     # sintético (~922 reviews)
-# Com o dataset real do Olist:
+# Com os datasets reais (Olist + B2W):
 #   baixe olist_order_reviews_dataset.csv do Kaggle (ou pegue na
 #   pasta `archive` do Drive) e salve como
-#   backend/data/olist_order_reviews_dataset.csv, depois:
-python -m ml.train --olist
+#   backend/data/olist_order_reviews_dataset.csv; baixe b2w.csv
+#   (pasta `archive-v2` do Drive) e salve como
+#   backend/data/b2w_reviews.csv, depois:
+python -m ml.train --olist --b2w
 
 Versão passo a passo para aprender no Google Colab (mesmo pipeline, célula
 por célula, com o CSV lido do Drive): `notebooks/treino-sentimento-olist-colab.ipynb`.
@@ -218,21 +224,22 @@ vem do arquivo local, pois não existe no banco).
   negação — a API nunca quebra.
 
 Último treino registrado (`backend/ml/artifacts/metrics.json`) — Olist
-real, 31/out/2026 (34.149 treino / 8.538 teste, 42.687 avaliações com
-texto):
++ B2W, 04/nov/2026 (140.048 treino / 35.012 teste, 175.060 avaliações
+com texto; o teste é 20% dos dados combinados):
 
 | modelo | accuracy | F1-macro |
 |---|---|---|
-| baseline maioria | 0,657 | 0,264 |
-| **LogReg (principal)** | **0,780** | **0,635** |
-| MLP (comparação) | 0,787 | 0,600 |
+| baseline maioria | 0,619 | 0,255 |
+| **LogReg (principal)** | **0,743** | **0,662** |
+| MLP (comparação) | 0,751 | 0,604 |
 
-F1 por classe (LogReg): positiva 0,886, negativa 0,761, neutra 0,259.
-A classe neutra é o gargalo — só 8,5% do treino e textos ambíguos.
+F1 por classe (LogReg): positiva 0,831, negativa 0,812, neutra 0,344.
+A classe neutra é o gargalo — 11,4% do treino e textos ambíguos.
 A MLP ganha em acurácia e perde em F1-macro, e treina numa
-subamostra de 12.000 linhas porque densifica o TF-IDF. O detalhe
-completo (matriz de confusão, top termos) está no plano em
-`docs/plano-trabalho-final.md`.
+subamostra de 12.000 linhas porque densifica o TF-IDF. No golden
+set da loja (24 itens), o modelo oficial faz 20/24 = 0,833. O
+detalhe completo (as 3 versões do treino, matriz de confusão, top
+termos) está no plano em `docs/plano-trabalho-final.md`.
 
 > **Aviso honesto:** o treino sintético de demonstração (922 linhas)
 > dá F1 = 1,0 nos dois modelos — artefato dos templates que se
