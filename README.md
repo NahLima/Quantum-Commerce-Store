@@ -1,8 +1,7 @@
 # Quantum Commerce Store — Análise de Sentimento em Reviews
 
 Trabalho final de Machine Learning (FIAP MBA, turma 4AIER, Prof. Ahirton) —
-**análise de sentimento em reviews (PT-BR)**, com referência ao Mercado Livre.
-Prazo de entrega: **22/nov/2026**.
+**análise de sentimento em reviews (PT-BR)**
 
 ## O problema
 
@@ -14,16 +13,13 @@ um dos desafios propostos: **processar o volume de avaliações de clientes
 para gerar um termômetro de satisfação por produto e por categoria** — o que
 o cliente elogia, o que ele reclama, e onde a operação deve agir primeiro.
 
-Na loja, isso aparece como no Mercado Livre: cada produto mostra a
-distribuição de sentimento (% positivas / neutras / negativas), a média de
-estrelas, os termos mais citados de elogio e de crítica **das avaliações
-daquele produto** (não do dataset inteiro), um resumo em prosa das
+Cada produto mostra a distribuição de sentimento (% positivas / neutras / negativas), 
+a média de estrelas, os termos mais citados de elogio e de crítica **das avaliações
+daquele produto**, um resumo em prosa das
 avaliações ("De 3 avaliações, 2 positivas e 1 negativa. O que mais elogiam:
-... O que mais reclamam: ..." — determinístico, sem LLM), e o cliente pode
-escrever uma avaliação e ver a classificação ao vivo. Termômetro e lista de
-avaliações vêm da API juntos e só trocam para os dados reais quando os dois
-respondem — antes, o termômetro vinha da API e a lista ficava no arquivo
-local, e a página mostrava contagens diferentes (produto 2, 03/nov/2026).
+... O que mais reclamam: ..." determinístico, sem LLM), e o cliente pode
+escrever uma avaliação e ver a classificação ao vivo. 
+
 No painel de operações (`/ops`), a Quantum vê por categoria quais produtos
 concentram sentimento negativo.
 
@@ -31,13 +27,13 @@ concentram sentimento negativo.
 
 | | |
 |---|---|
-| **Treino** | **Olist + B2W reais** — Brazilian E-Commerce Public Dataset (Kaggle, ~100 mil reviews PT-BR, 2016–2018) + B2W-Reviews01 (Americanas.com, 2018, 132 mil reviews). Rótulo derivado das estrelas: 1–2 negativo, 3 neutro, 4–5 positivo. |
+| **Treino** | **Olist + B2W reais** — Brazilian E-Commerce Public Dataset (Kaggle, ~100 mil reviews PT-BR, 2016–2018) + B2W-Reviews01 (Americanas.com, 2018, 132 mil reviews). **Rótulo** derivado das estrelas: 1–2 negativo, 3 neutro, 4–5 positivo. |
 | **Demo** | **Loja Quantum** — os 50 produtos do projeto Figma (5 categorias) + avaliações de demonstração em PT-BR + predição ao vivo de texto digitado. |
 
 Por que assim: treinar só com dado sintético faria o modelo aprender apenas
 os padrões que inventamos; treinar no Olist dá português real (gíria, erro de
-digitação, ironia) e métricas honestas; o B2W entrou em nov/2026 porque o
-Olist sozinho tinha poucas neutras e negativas — a escolha foi medida no
+digitação, ironia) e métricas honestas; o B2W entrou porque o
+Olist sozinho tinha poucas neutras e negativas a escolha foi medida no
 Colab em 3 versões (v1 Olist, v2 Olist+EDA, v3 Olist+B2W) e a v3 ganhou no
 golden set (19/24, contra 13/24 da v1). A demo na Quantum mostra o modelo
 funcionando no contexto da empresa. Os datasets **não estão no repo**
@@ -65,16 +61,17 @@ flowchart LR
     Services --> ML
 ```
 
-Fluxo de uma avaliação: cliente digita o texto → `POST /predict` (ou
-`POST /reviews`) → `ReviewService` → `SentimentPredictor` (TF-IDF+LogReg;
-sem artefato, cai para o léxico) → predição salva em `predictions` →
-termômetro recalculado a partir de `reviews` + `predictions`.
+Dois fluxos passam pelo `SentimentPredictor` (TF-IDF+LogReg; sem artefato, cai para o léxico):
+
+- **Publicar uma avaliação:** cliente escreve o texto na página do produto → `POST /reviews` → `ReviewService `→ avaliação salva em reviews e predição salva em predictions (ligada à avaliação) → termômetro recalculado a partir de reviews + predictions.
+
+- **Testar o modelo:** cliente digita um texto solto → `POST /predict` → `ReviewService` → só devolve a classificação na hora, sem criar avaliação nem mexer no termômetro.
 
 ## Stack
 
 | Camada | Stack |
 |---|---|
-| Frontend | Next.js 15 + React 19 + TypeScript + Tailwind v4 (a partir do Figma) |
+| Frontend | Next.js 15 + React 19 + TypeScript + Tailwind v4 (a partir do protótipo executado no Figma) |
 | Backend | Python 3.12 + FastAPI + SQLAlchemy + scikit-learn |
 | Banco | Postgres 16 via Docker (local); SQLite como fallback p/ testes |
 | ML | TF-IDF + Regressão Logística (principal), MLP (comparação), baseline maioria |
@@ -223,9 +220,6 @@ vem do arquivo local, pois não existe no banco).
 - **Fallback:** sem artefato treinado, `/predict` usa um léxico PT-BR com
   negação — a API nunca quebra.
 
-Último treino registrado (`backend/ml/artifacts/metrics.json`) — Olist
-+ B2W, 04/nov/2026 (140.048 treino / 35.012 teste, 175.060 avaliações
-com texto; o teste é 20% dos dados combinados):
 
 | modelo | accuracy | F1-macro |
 |---|---|---|
