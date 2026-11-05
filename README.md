@@ -227,15 +227,12 @@ vem do arquivo local, pois não existe no banco).
 | **LogReg (principal)** | **0,743** | **0,662** |
 | MLP (comparação) | 0,751 | 0,604 |
 
+
+
 F1 por classe (LogReg): positiva 0,831, negativa 0,812, neutra 0,344.
-A classe neutra é o gargalo — 11,4% do treino e textos ambíguos.
+A classe neutra é o gargalo 11,4% do treino e textos ambíguos.
 A MLP ganha em acurácia e perde em F1-macro, e treina numa
 subamostra de 12.000 linhas porque densifica o TF-IDF. No golden
 set da loja (24 itens), o modelo oficial faz 20/24 = 0,833. O
 detalhe completo (as 3 versões do treino, matriz de confusão, top
 termos) está no plano em `docs/plano-trabalho-final.md`.
-
-> **Aviso honesto:** o treino sintético de demonstração (922 linhas)
-> dá F1 = 1,0 nos dois modelos — artefato dos templates que se
-> sobrepõem, não resultado real. Não apresentar 1,0 como desempenho
-> do modelo.

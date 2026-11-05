@@ -1,10 +1,18 @@
-# Quantum Commerce — Análise de Sentimento em Reviews
+# Quantum Commerce - Análise de Sentimento em Reviews
 ## Trabalho final de Machine Learning (FIAP MBA, turma 4AIER)
 
-**Tema escolhido:** análise de sentimento em reviews, com referência ao Mercado Livre.
-**Entrega:** 22/nov/2026 · **Prof.:** Ahirton Lopes (profahirton.lopes@fiap.com.br)
+###  Aluna **Naiara Lima**
+### RM:376299
+
+##
+
+**Tema escolhido:** Análise de Sentimento em Reviews de Produtos.
+
+**Prof.:** Ahirton Lopes
+
 **Repositório:** https://github.com/NahLima/Quantum-Commerce-Store
-**Decisão de dataset (31/out/2026, atualizada 04/nov/2026):** treinar no Olist real + B2W (treino oficial desde 04/nov/2026) + demonstrar na loja Quantum. A escolha entre Olist, Olist+EDA e Olist+B2W foi medida no Colab em 3 versões (ver §3.4).
+
+**Decisão de dataset:** treinar no Olist real + B2W + demonstrar na loja Quantum. A escolha entre Olist, Olist+EDA e Olist+B2W foi medida no Colab em 3 versões.
 
 Este documento é o plano escrito do trabalho. A aplicação funcionando
 (frontend + backend + banco) está neste mesmo repositório e é a demonstração
@@ -94,7 +102,7 @@ implementada: o mesmo TF-IDF alimenta um **MLPClassifier**
 (`hidden_layer_sizes=(128,)`, uma camada oculta), treinado e avaliado
 no mesmo split, com as mesmas métricas.
 
-Com o Olist real (31/out/2026, ver 3.4), o comportamento foi o
+Com o Olist real (ver 3.4), o comportamento foi o
 clássico da literatura para texto curto e pouco dado: a MLP ganhou
 um pouco em acurácia (0,787 contra 0,780) e **perdeu em F1-macro**
 (0,600 contra 0,635), por errar muito mais a classe neutra
@@ -159,7 +167,7 @@ scikit-learn — TF-IDF + LogReg / MLP (ml/artifacts/)
 |---|---|---|
 | **Olist** — Brazilian E-Commerce Public Dataset (Kaggle) | ~100 mil avaliações reais em PT-BR (2016–2018), com `review_score` 1–5 e texto livre (`review_comment_message`, `review_comment_title`) | Treino e avaliação do modelo. Rótulo por estrelas. Não está no repo (licença Kaggle, ignorado no `.gitignore`); arquivo original na pasta `archive` do Drive, salvo como `backend/data/olist_order_reviews_dataset.csv` (31/out/2026: 42.687 linhas úteis — ver 3.4). |
 | **B2W-Reviews01** — Americanas.com (2018), no dataset unificado PT-BR do Kaggle | 132.373 avaliações reais em PT-BR com `rating` 1–5 e texto livre (`review_text`) | Treino oficial junto com o Olist desde 04/nov/2026. Soma 16.315 neutras (4,5× as do Olist) e 35.758 negativas. Não está no repo (CC BY-NC-SA, ignorado no `.gitignore`); arquivo na pasta `archive-v2` do Drive, salvo como `backend/data/b2w_reviews.csv`, treino com `python -m ml.train --olist --b2w` (ver 3.4). |
-| **Catálogo Quantum (Figma)** | 50 produtos, 5 categorias, nomes, preços, cores, imagens | Demonstração na loja. Extraído do `App.tsx` do Figma sem inventar nada. |
+| **Catálogo Quantum (Figma)** | 50 produtos, 5 categorias, nomes, preços, cores, imagens | Demonstração na loja. Design feito no Figma|
 | **Reviews de demonstração** | 234 avaliações sintéticas em PT-BR, 3–6 por produto, estrelas coerentes com o texto, marcadas como `source=seed` | Termômetro e painel funcionarem na demo. Não são evidência de desempenho — são só o palco. |
 | **Golden set manual** | 24 avaliações dos produtos Quantum revisadas manualmente, rótulos aprovados pela Naiara (01/nov/2026) | Validar a transferência Olist+B2W → Quantum (mudança de domínio). LogReg oficial: 20/24 = 0,833 (ver 3.4). |
 
@@ -266,7 +274,7 @@ verdade: negativa, neutra, positiva): [[7621, 1470, 259],
 
 #### Golden set Quantum — validação na loja (01/nov/2026)
 
-O golden set manual resolve a limitação de domínio (§4.1): 24
+O golden set manual resolve a limitação de domínio (ver 4.1): 24
 avaliações novas em PT-BR, escritas para este teste (não copiadas do
 seed nem do Olist), ligadas a produtos reais do Figma (ids 1–50),
 8 por classe, cobrindo as 5 categorias. Rótulos aprovados pela
@@ -430,29 +438,24 @@ segue sendo o classificador TF-IDF + LogReg/MLP.
 6. **Código:** mostrar `ml/interfaces.py` (o contrato),
    `app/services.py` (a regra) e a tabela SOLID no README.
 
-## Cronograma até 22/11/2026
-
-| Quando | O quê |
-|---|---|
-| 31/out | Scaffold completo, build e testes passando, push no git (bundle → Mac) |
-| 31/out | Olist verificado na pasta `archive` do Drive, loader corrigido para as colunas reais, treino com `--olist` e métricas reais registradas (F1-macro LogReg 0,635) |
-| Semana 1 (nov) | Golden set manual Quantum — feito 01/nov: 24 itens, rótulos aprovados, LogReg 13/24 = 0,542 (neutra 2/8); validar Docker no Mac, ajustar limiar se preciso |
-| 04/nov | Treino oficial virou Olist+B2W: 3 versões comparadas no Colab (v1 Olist, v2 Olist+EDA, v3 Olist+B2W), Buscapé testado e descartado, golden set 20/24 = 0,833 (neutra 5/8) |
-| Semana 2 | Ampliar golden set (~40 itens, mais neutras), validar transferência, ajustar limiar se preciso |
-| Semana 3 | Slides/documento final a partir deste plano, ensaio da demo, entrega |
 
 ## Referências
 
-- Enunciado da disciplina (Google Doc "Quantum Commerce — Trabalho
-  Completo (Turma 4AIER)").
 - Scikit-learn Documentation — https://scikit-learn.org/stable/
 - Olist Brazilian E-Commerce Public Dataset (Kaggle) —
   https://www.kaggle.com/datasets
-- B2W-Reviews01 (Real, Oshiro & Mafra, STIL 2019) e dataset unificado
-  PT-BR de análise de sentimento (Frederico et al.) —
-  https://github.com/b2wdigital/b2w-reviews01 e
-  https://www.kaggle.com/fredericods/ptbr-sentiment-analysis-datasets
+- Dataset unificado (Kaggle)  Brazilian Portuguese Sentiment Analysis Datasets - https://www.kaggle.com/datasets/fredericods/ptbr-sentiment-analysis-datasets?select=utlc_apps.csv
+
 - Repositório da disciplina (Demos 1 a 12) —
   https://github.com/ahirtonlopes/Machine-Learning-Foundations-and-Classic-Models
-- Projeto Figma (Drive) e este repositório (código, READMEs e
-  `backend/ml/artifacts/metrics.json`).
+
+- Algoritmo SMOTE aprimorado para classificação de dados - https://www.nature.com/articles/s41598-025-09506-w
+
+- SMOTE para classificação de dados desbalanceados com Python - https://machinelearningmastery.com/smote-oversampling-for-imbalanced-classification/
+
+
+- Regressão Logística — Logistic Regression - https://medium.com/@msremigio/regress%C3%A3o-log%C3%ADstica-logistic-regression-997c6259ff9a
+
+- Matriz de confusão - https://www.datacamp.com/pt/tutorial/what-is-a-confusion-matrix-in-machine-learning
+
+-  Text Sentiment Analysis on IMDB Reviews with LSTM | Logistic Regression | Deep Learning Project - https://www.youtube.com/watch?v=uAz2i5CFa0c
