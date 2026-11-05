@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="footer-main">
         <div className="footer-brand">
           <div className="brand">
-            <span className="brand-mark">Q</span>QUANTUM<span>COMERCE</span>
+            <span className="brand-mark">Q</span>QUANTUM<span>COMMERCE</span>
           </div>
           <p>
             Uma curadoria de objetos extraordinários
@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2025 QUANTUM COMERCE</span>
+        <span>© 2026 QUANTUM COMMERCE</span>
         <span>FEITO PARA OS CURIOSOS.</span>
         <span>PRIVACIDADE · TERMOS</span>
       </div>

@@ -81,7 +81,7 @@ export default function Header() {
           <Icon name={mobileMenu ? 'close' : 'menu'} />
         </button>
         <Link href="/" className="brand" onClick={() => setMobileMenu(false)}>
-          <span className="brand-mark">Q</span>QUANTUM<span>COMERCE</span>
+          <span className="brand-mark">Q</span>QUANTUM<span>COMMERCE</span>
         </Link>
         <nav className={mobileMenu ? 'open' : ''}>
           <Link href="/#catalogo" onClick={() => setMobileMenu(false)}>

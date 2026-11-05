@@ -362,9 +362,9 @@ export default function ProductPage() {
               {summary?.source === 'gemini' && (
                 <span className="api-note">✦ Resumo de opiniões gerado por IA</span>
               )}
-              {apiOnline === true && (
+              {/* {apiOnline === true && (
                 <span className="api-note">● Dados ao vivo da API (Postgres + modelo de ML)</span>
-              )}
+              )} */}
               {apiOnline === false && (
                 <span className="api-note offline">
                   ○ API fora do ar — mostrando avaliações de demonstração locais. Suba o backend
